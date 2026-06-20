@@ -286,7 +286,7 @@ export default function AssessmentClient({ questions }: { questions: PublicQuest
             onClick={submit}
             disabled={!allAnswered || submitting}
           >
-            {submitting ? "Submitting…" : "Finish & see my profile"}
+            {submitting ? "Submitting…" : "Finish & Submit"}
           </button>
         )}
       </div>
