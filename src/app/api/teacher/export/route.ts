@@ -15,14 +15,19 @@ export async function GET(request: Request) {
   const where: Prisma.StudentSubmissionWhereInput = {};
 
   const q = searchParams.get("q")?.trim();
-  const className = searchParams.get("className")?.trim();
-  const gradeLevel = searchParams.get("gradeLevel")?.trim();
+  const school = searchParams.get("school")?.trim();
   const role = searchParams.get("role")?.trim();
   const date = searchParams.get("date")?.trim();
 
-  if (q) where.studentName = { contains: q };
-  if (className) where.className = className;
-  if (gradeLevel) where.gradeLevel = gradeLevel;
+  if (q) {
+    where.OR = [
+      { studentName: { contains: q, mode: "insensitive" } },
+      { nickname: { contains: q, mode: "insensitive" } },
+      { schoolName: { contains: q, mode: "insensitive" } },
+      { teamName: { contains: q, mode: "insensitive" } },
+    ];
+  }
+  if (school) where.schoolName = school;
   if (role) where.primaryRole = role;
   if (date) {
     const start = new Date(`${date}T00:00:00`);
@@ -39,9 +44,8 @@ export async function GET(request: Request) {
     createdAt: new Date(s.createdAt).toISOString(),
     studentName: s.studentName,
     nickname: s.nickname ?? "",
-    gradeLevel: s.gradeLevel,
-    className: s.className,
-    teacherEmail: s.teacherEmail,
+    schoolName: s.schoolName ?? "",
+    teamName: s.teamName ?? "",
     totalUnderstandingScore: s.totalUnderstandingScore,
     understandingLevel: s.understandingLevel,
     primaryRole: s.primaryRole,

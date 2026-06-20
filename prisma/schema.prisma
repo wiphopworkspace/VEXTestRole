@@ -27,9 +27,12 @@ model StudentSubmission {
   id                      String             @id @default(cuid())
   studentName             String
   nickname                String?
-  gradeLevel              String
-  className               String
-  teacherEmail            String
+  schoolName              String?
+  // Legacy fields kept nullable for backward compatibility with older
+  // submissions. They are no longer collected by the student form.
+  gradeLevel              String?
+  className               String?
+  teacherEmail            String?
   teamName                String?
   totalUnderstandingScore Int
   understandingLevel      String
@@ -43,6 +46,7 @@ model StudentSubmission {
   createdAt               DateTime           @default(now())
   answers                 SubmissionAnswer[]
 
+  @@index([schoolName])
   @@index([className])
   @@index([gradeLevel])
   @@index([primaryRole])

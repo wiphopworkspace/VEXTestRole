@@ -46,10 +46,12 @@ export default async function SubmissionDetailPage({
           ) : null}
         </h1>
         <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-slate-600">
-          <span><strong>Grade:</strong> {submission.gradeLevel}</span>
-          <span><strong>Class:</strong> {submission.className}</span>
+          <span><strong>School:</strong> {submission.schoolName ?? "—"}</span>
           {submission.teamName ? <span><strong>Team:</strong> {submission.teamName}</span> : null}
-          <span><strong>Teacher email:</strong> {submission.teacherEmail}</span>
+          {/* Legacy fields — only shown for older submissions that still have them. */}
+          {submission.gradeLevel ? <span><strong>Grade:</strong> {submission.gradeLevel}</span> : null}
+          {submission.className ? <span><strong>Class:</strong> {submission.className}</span> : null}
+          {submission.teacherEmail ? <span><strong>Teacher email:</strong> {submission.teacherEmail}</span> : null}
         </div>
         <div className="mt-3 text-xs">
           {submission.emailStatus === "sent" && (

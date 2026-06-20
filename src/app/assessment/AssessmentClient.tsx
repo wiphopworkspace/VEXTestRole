@@ -7,9 +7,7 @@ import type { PublicQuestion } from "@/lib/questions";
 interface StudentInfo {
   studentName: string;
   nickname: string;
-  gradeLevel: string;
-  className: string;
-  teacherEmail: string;
+  schoolName: string;
   teamName: string;
   consent: boolean;
 }
@@ -17,22 +15,10 @@ interface StudentInfo {
 const EMPTY_INFO: StudentInfo = {
   studentName: "",
   nickname: "",
-  gradeLevel: "",
-  className: "",
-  teacherEmail: "",
+  schoolName: "",
   teamName: "",
   consent: false,
 };
-
-const GRADE_OPTIONS = [
-  "Grade 3",
-  "Grade 4",
-  "Grade 5",
-  "Grade 6",
-  "Grade 7",
-  "Grade 8",
-  "Other",
-];
 
 export default function AssessmentClient({ questions }: { questions: PublicQuestion[] }) {
   const router = useRouter();
@@ -55,13 +41,7 @@ export default function AssessmentClient({ questions }: { questions: PublicQuest
   function validateInfo(): boolean {
     const errs: Record<string, string> = {};
     if (!info.studentName.trim()) errs.studentName = "Please enter your name.";
-    if (!info.gradeLevel.trim()) errs.gradeLevel = "Please select a grade level.";
-    if (!info.className.trim()) errs.className = "Please enter your class.";
-    if (!info.teacherEmail.trim()) {
-      errs.teacherEmail = "Please enter your teacher's email.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.teacherEmail.trim())) {
-      errs.teacherEmail = "Please enter a valid email address.";
-    }
+    if (!info.schoolName.trim()) errs.schoolName = "Please enter your school name.";
     if (!info.consent) errs.consent = "Please check the consent box to continue.";
     setInfoErrors(errs);
     return Object.keys(errs).length === 0;
@@ -102,9 +82,7 @@ export default function AssessmentClient({ questions }: { questions: PublicQuest
         student: {
           studentName: info.studentName.trim(),
           nickname: info.nickname.trim(),
-          gradeLevel: info.gradeLevel.trim(),
-          className: info.className.trim(),
-          teacherEmail: info.teacherEmail.trim(),
+          schoolName: info.schoolName.trim(),
           teamName: info.teamName.trim(),
           consent: info.consent,
         },
@@ -168,77 +146,34 @@ export default function AssessmentClient({ questions }: { questions: PublicQuest
             />
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="gradeLevel">
-                Grade level <span className="text-rose-500">*</span>
-              </label>
-              <select
-                id="gradeLevel"
-                className="input"
-                value={info.gradeLevel}
-                onChange={(e) => setInfo({ ...info, gradeLevel: e.target.value })}
-              >
-                <option value="">Select…</option>
-                {GRADE_OPTIONS.map((g) => (
-                  <option key={g} value={g}>
-                    {g}
-                  </option>
-                ))}
-              </select>
-              {infoErrors.gradeLevel && (
-                <p className="mt-1 text-sm text-rose-600">{infoErrors.gradeLevel}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="label" htmlFor="className">
-                Class <span className="text-rose-500">*</span>
-              </label>
-              <input
-                id="className"
-                className="input"
-                value={info.className}
-                onChange={(e) => setInfo({ ...info, className: e.target.value })}
-                placeholder="e.g. 5B or Robotics Club"
-                autoComplete="off"
-              />
-              {infoErrors.className && (
-                <p className="mt-1 text-sm text-rose-600">{infoErrors.className}</p>
-              )}
-            </div>
+          <div>
+            <label className="label" htmlFor="schoolName">
+              School name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              id="schoolName"
+              className="input"
+              value={info.schoolName}
+              onChange={(e) => setInfo({ ...info, schoolName: e.target.value })}
+              placeholder="e.g. Bangkok Robotics School"
+              autoComplete="off"
+            />
+            {infoErrors.schoolName && (
+              <p className="mt-1 text-sm text-rose-600">{infoErrors.schoolName}</p>
+            )}
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <label className="label" htmlFor="teacherEmail">
-                Teacher&apos;s email <span className="text-rose-500">*</span>
-              </label>
-              <input
-                id="teacherEmail"
-                type="email"
-                className="input"
-                value={info.teacherEmail}
-                onChange={(e) => setInfo({ ...info, teacherEmail: e.target.value })}
-                autoComplete="off"
-              />
-              {infoErrors.teacherEmail && (
-                <p className="mt-1 text-sm text-rose-600">{infoErrors.teacherEmail}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="label" htmlFor="teamName">
-                Team name <span className="text-slate-400">(optional)</span>
-              </label>
-              <input
-                id="teamName"
-                className="input"
-                value={info.teamName}
-                onChange={(e) => setInfo({ ...info, teamName: e.target.value })}
-                autoComplete="off"
-              />
-            </div>
+          <div>
+            <label className="label" htmlFor="teamName">
+              Team name <span className="text-slate-400">(optional)</span>
+            </label>
+            <input
+              id="teamName"
+              className="input"
+              value={info.teamName}
+              onChange={(e) => setInfo({ ...info, teamName: e.target.value })}
+              autoComplete="off"
+            />
           </div>
 
           <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-4">

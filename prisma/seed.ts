@@ -17,9 +17,7 @@ const prisma = new PrismaClient();
 interface DemoStudent {
   studentName: string;
   nickname?: string;
-  gradeLevel: string;
-  className: string;
-  teacherEmail: string;
+  schoolName: string;
   teamName?: string;
   /** Bias the demo answers toward a role by preferring correct answers. */
   correctRatio: number;
@@ -30,18 +28,14 @@ const DEMO_STUDENTS: DemoStudent[] = [
   {
     studentName: "Alex Rivera",
     nickname: "Lex",
-    gradeLevel: "Grade 5",
-    className: "Robotics Club",
-    teacherEmail: "coach@example.com",
+    schoolName: "Bangkok Robotics School",
     teamName: "Gear Goblins",
     correctRatio: 0.85,
     seed: 7,
   },
   {
     studentName: "Priya Sharma",
-    gradeLevel: "Grade 6",
-    className: "6A",
-    teacherEmail: "coach@example.com",
+    schoolName: "Riverside STEM Academy",
     teamName: "Circuit Sparks",
     correctRatio: 0.55,
     seed: 23,
@@ -87,9 +81,7 @@ async function main() {
       data: {
         studentName: student.studentName,
         nickname: student.nickname ?? null,
-        gradeLevel: student.gradeLevel,
-        className: student.className,
-        teacherEmail: student.teacherEmail,
+        schoolName: student.schoolName,
         teamName: student.teamName ?? null,
         totalUnderstandingScore: score.totalUnderstandingScore,
         understandingLevel: score.understandingLevel,

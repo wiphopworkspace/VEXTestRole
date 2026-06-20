@@ -6,9 +6,8 @@ export interface CsvRow {
   createdAt: string;
   studentName: string;
   nickname: string;
-  gradeLevel: string;
-  className: string;
-  teacherEmail: string;
+  schoolName: string;
+  teamName: string;
   totalUnderstandingScore: number;
   understandingLevel: string;
   primaryRole: string;
@@ -21,9 +20,8 @@ const HEADERS = [
   "createdAt",
   "studentName",
   "nickname",
-  "gradeLevel",
-  "className",
-  "teacherEmail",
+  "schoolName",
+  "teamName",
   "totalUnderstandingScore",
   "understandingLevel",
   "primaryRole",
@@ -52,9 +50,8 @@ export function buildCsv(rows: CsvRow[]): string {
       row.createdAt,
       row.studentName,
       row.nickname,
-      row.gradeLevel,
-      row.className,
-      row.teacherEmail,
+      row.schoolName,
+      row.teamName,
       row.totalUnderstandingScore,
       row.understandingLevel,
       row.primaryRole,

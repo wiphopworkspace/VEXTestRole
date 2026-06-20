@@ -6,14 +6,7 @@ import { QUESTIONS } from "./questions";
 export const studentInfoSchema = z.object({
   studentName: z.string().trim().min(1, "Please enter your name.").max(120),
   nickname: z.string().trim().max(120).optional().or(z.literal("")),
-  gradeLevel: z.string().trim().min(1, "Please select a grade level.").max(60),
-  className: z.string().trim().min(1, "Please enter your class.").max(120),
-  teacherEmail: z
-    .string()
-    .trim()
-    .min(1, "Please enter your teacher's email.")
-    .email("Please enter a valid email address.")
-    .max(200),
+  schoolName: z.string().trim().min(1, "Please enter your school name.").max(160),
   teamName: z.string().trim().max(120).optional().or(z.literal("")),
   consent: z.literal(true, {
     errorMap: () => ({ message: "Consent is required before starting the quiz." }),

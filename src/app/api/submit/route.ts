@@ -33,9 +33,7 @@ export async function POST(request: Request) {
       data: {
         studentName: student.studentName,
         nickname: student.nickname || null,
-        gradeLevel: student.gradeLevel,
-        className: student.className,
-        teacherEmail: student.teacherEmail,
+        schoolName: student.schoolName,
         teamName: student.teamName || null,
         totalUnderstandingScore: score.totalUnderstandingScore,
         understandingLevel: score.understandingLevel,
@@ -64,13 +62,12 @@ export async function POST(request: Request) {
     );
   }
 
-  // Optional email (best-effort, does not block the result).
+  // Optional email (best-effort, does not block the result). Sent only when a
+  // fixed notification recipient is configured (the form no longer collects one).
   if (isEmailConfigured()) {
     const status = await sendReportEmail({
-      teacherEmail: student.teacherEmail,
       studentName: student.studentName,
-      gradeLevel: student.gradeLevel,
-      className: student.className,
+      schoolName: student.schoolName,
       totalUnderstandingScore: score.totalUnderstandingScore,
       understandingLevel: score.understandingLevel,
       primaryRole: score.primaryRole,

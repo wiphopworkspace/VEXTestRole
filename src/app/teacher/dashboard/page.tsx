@@ -11,8 +11,7 @@ export const dynamic = "force-dynamic";
 
 interface SearchParams {
   q?: string;
-  className?: string;
-  gradeLevel?: string;
+  school?: string;
   role?: string;
   date?: string;
 }
@@ -30,13 +29,16 @@ export default async function DashboardPage({
   const where: Prisma.StudentSubmissionWhereInput = {};
 
   if (sp.q?.trim()) {
-    where.studentName = { contains: sp.q.trim() };
+    const q = sp.q.trim();
+    where.OR = [
+      { studentName: { contains: q, mode: "insensitive" } },
+      { nickname: { contains: q, mode: "insensitive" } },
+      { schoolName: { contains: q, mode: "insensitive" } },
+      { teamName: { contains: q, mode: "insensitive" } },
+    ];
   }
-  if (sp.className?.trim()) {
-    where.className = sp.className.trim();
-  }
-  if (sp.gradeLevel?.trim()) {
-    where.gradeLevel = sp.gradeLevel.trim();
+  if (sp.school?.trim()) {
+    where.schoolName = sp.school.trim();
   }
   if (sp.role?.trim()) {
     where.primaryRole = sp.role.trim();
@@ -55,12 +57,13 @@ export default async function DashboardPage({
       orderBy: { createdAt: "desc" },
     }),
     prisma.studentSubmission.findMany({
-      select: { className: true, gradeLevel: true },
+      select: { schoolName: true },
     }),
   ]);
 
-  const classes = [...new Set(allForFilters.map((s) => s.className))].sort();
-  const grades = [...new Set(allForFilters.map((s) => s.gradeLevel))].sort();
+  const schools = [
+    ...new Set(allForFilters.map((s) => s.schoolName).filter((v): v is string => Boolean(v))),
+  ].sort();
 
   const count = submissions.length;
   const avgScore =
@@ -129,32 +132,25 @@ export default async function DashboardPage({
       <form method="get" className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <label className="label" htmlFor="q">
-            Search name
+            Search
           </label>
-          <input id="q" name="q" className="input" defaultValue={sp.q ?? ""} placeholder="Student name" />
+          <input
+            id="q"
+            name="q"
+            className="input"
+            defaultValue={sp.q ?? ""}
+            placeholder="Name, nickname, school, or team"
+          />
         </div>
-        <div>
-          <label className="label" htmlFor="className">
-            Class
+        <div className="lg:col-span-2">
+          <label className="label" htmlFor="school">
+            School
           </label>
-          <select id="className" name="className" className="input" defaultValue={sp.className ?? ""}>
+          <select id="school" name="school" className="input" defaultValue={sp.school ?? ""}>
             <option value="">All</option>
-            {classes.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="gradeLevel">
-            Grade
-          </label>
-          <select id="gradeLevel" name="gradeLevel" className="input" defaultValue={sp.gradeLevel ?? ""}>
-            <option value="">All</option>
-            {grades.map((g) => (
-              <option key={g} value={g}>
-                {g}
+            {schools.map((s) => (
+              <option key={s} value={s}>
+                {s}
               </option>
             ))}
           </select>
@@ -198,7 +194,7 @@ export default async function DashboardPage({
             <tr>
               <th className="px-4 py-3">Date</th>
               <th className="px-4 py-3">Student</th>
-              <th className="px-4 py-3">Grade / Class</th>
+              <th className="px-4 py-3">School</th>
               <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3">Level</th>
               <th className="px-4 py-3">Primary</th>
@@ -224,7 +220,8 @@ export default async function DashboardPage({
                   {s.nickname ? <span className="text-slate-400"> ({s.nickname})</span> : null}
                 </td>
                 <td className="px-4 py-3 text-slate-600">
-                  {s.gradeLevel} · {s.className}
+                  {s.schoolName ?? <span className="text-slate-300">—</span>}
+                  {s.teamName ? <span className="text-slate-400"> · {s.teamName}</span> : null}
                 </td>
                 <td className="px-4 py-3 font-semibold text-slate-800">{s.totalUnderstandingScore}%</td>
                 <td className="px-4 py-3 text-slate-600">{s.understandingLevel}</td>
