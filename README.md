@@ -1,10 +1,11 @@
 # VEX IQ Role Readiness Assessment
 
 A full-stack web app where students complete an English-language, multiple-choice
-assessment based on VEX IQ Robotics Competition participation. After submission it
-produces a **preliminary learning profile**: which team roles the student tends to be
-strong in, what they understand well, what to practice next, and a teacher-readable
-report (optionally emailed).
+assessment based on VEX IQ Robotics Competition participation. After submitting,
+the student sees only a simple confirmation. The analysis — a **preliminary learning
+profile** of which team roles the student tends to be strong in, what they understand
+well, and what to practice next — is produced as a teacher-readable report available
+only in the teacher dashboard (and optionally emailed to a fixed teacher address).
 
 > **Important:** This tool provides a *preliminary learning profile* for educational
 > guidance and team placement only. It does **not** certify students, assign final team
@@ -40,7 +41,7 @@ and teamwork:
 | --- | --- |
 | `/` | Landing page, purpose, privacy notice, start + teacher login |
 | `/assessment` | Student info form + 24-question quiz (one question per screen) |
-| `/assessment/result/[submissionId]` | Encouraging student-facing result (unguessable ID) |
+| `/assessment/result/[submissionId]` | Simple "submission received" confirmation — no score or analysis shown to students |
 | `/teacher/login` | Password login (env `TEACHER_PASSWORD`) |
 | `/teacher/dashboard` | List, search/filter, summary, CSV export |
 | `/teacher/submissions/[submissionId]` | Detailed teacher report |
@@ -99,11 +100,14 @@ Open http://localhost:3000.
 | `DATABASE_URL` | Yes | PostgreSQL connection string (Supabase in production, Postgres locally). |
 | `TEACHER_PASSWORD` | Recommended | Teacher login password. In dev, falls back to `teacher1234` if unset. **Set a strong value in production.** |
 | `APP_URL` | Recommended | Public base URL used to build report links in emails (e.g. `https://your-site.netlify.app`). |
-| `RESEND_API_KEY` | Optional | Resend API key. If set with `FROM_EMAIL`, reports are emailed. |
+| `RESEND_API_KEY` | Optional | Resend API key. Required (with the two below) to email reports. |
 | `FROM_EMAIL` | Optional | Verified Resend "from" address. |
+| `TEACHER_NOTIFICATION_EMAIL` | Optional | Fixed teacher/admin recipient for report emails. The student form no longer collects a teacher email, so this is the only address reports are sent to. |
 
-If `RESEND_API_KEY` **or** `FROM_EMAIL` is missing, email is skipped, the report is
-stored, and the dashboard shows **"Email delivery is not configured."**
+A report email is sent only when **all three** of `RESEND_API_KEY`, `FROM_EMAIL`,
+and `TEACHER_NOTIFICATION_EMAIL` are set. If any is missing, email is skipped, the
+report is stored, and the dashboard shows **"Email delivery is not configured."**
+Students are never shown or told about email delivery.
 
 ## Scoring design
 
@@ -171,11 +175,12 @@ TEACHER_PASSWORD="replace-with-strong-password"
 APP_URL="https://your-netlify-site.netlify.app"
 ```
 
-Optional (enables emailed reports):
+Optional (all three enable emailed reports to a fixed address):
 
 ```env
 RESEND_API_KEY=""
 FROM_EMAIL=""
+TEACHER_NOTIFICATION_EMAIL=""
 ```
 
 After changing any environment variable in Netlify you must **redeploy** (trigger
@@ -225,13 +230,16 @@ Once live, walk the full flow:
 
 - `/` — landing page + privacy notice loads
 - `/assessment` — info form + quiz; submit one test student
-- `/assessment/result/[submissionId]` — student result page renders
+- `/assessment/result/[submissionId]` — shows only a "submission received"
+  confirmation (no score or analysis)
 - `/teacher/login` — log in with `TEACHER_PASSWORD`
-- `/teacher/dashboard` — the test submission appears; filters work
+- `/teacher/dashboard` — the test submission appears (table on desktop, cards on
+  mobile); filters work
 - `/teacher/submissions/[submissionId]` — full teacher report renders
 - **CSV export** from the dashboard downloads
-- If Resend is configured, the teacher receives the report email; otherwise the
-  dashboard shows "Email delivery is not configured" (this is expected).
+- If all three email vars are configured, the fixed notification address receives
+  the report email; otherwise the dashboard shows "Email delivery is not
+  configured" (this is expected).
 
 ## Netlify troubleshooting
 
@@ -251,11 +259,13 @@ Once live, walk the full flow:
 
 ## Privacy
 
-- Collects only student name/nickname, grade, class, and teacher email.
+- Collects only the student's name or nickname, school name, and (optionally) team name.
 - No other personal or sensitive data is collected.
 - A consent checkbox is required before the quiz.
-- The teacher dashboard requires login; results are not public.
-- Student result pages use unguessable IDs (`cuid`).
+- Students never see their own score or analysis — after submitting they get only a
+  confirmation. Results are available only to authorized teachers through the
+  teacher dashboard (login required) and are not public.
+- Submission IDs are unguessable (`cuid`).
 
 ## Limitations / notes
 

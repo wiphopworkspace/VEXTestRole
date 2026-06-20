@@ -16,7 +16,7 @@ body {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl px-5 py-3 text-base font-semibold transition focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-200 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-brand-600 text-white hover:bg-brand-700;
@@ -25,12 +25,12 @@ body {
     @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
   }
   .card {
-    @apply rounded-2xl border border-slate-200 bg-white p-6 shadow-sm;
+    @apply rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6;
   }
   .label {
     @apply mb-1 block text-sm font-semibold text-slate-700;
   }
   .input {
-    @apply w-full rounded-xl border border-slate-300 px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
+    @apply min-h-[44px] w-full rounded-xl border border-slate-300 px-4 py-3 text-base shadow-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200;
   }
 }

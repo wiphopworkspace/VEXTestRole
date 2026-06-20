@@ -64,10 +64,10 @@ export default function HomePage() {
       <section className="card border-amber-200 bg-amber-50">
         <h2 className="text-xl font-bold text-amber-900">Privacy notice</h2>
         <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-amber-900/90">
-          <li>We collect only your name or nickname, grade, class, and your teacher&apos;s email.</li>
+          <li>We collect only your name or nickname, your school name, and (optionally) your team name.</li>
           <li>We do not collect any other personal or sensitive information.</li>
           <li>You will be asked to confirm consent before the quiz begins.</li>
-          <li>Results are shared with your teacher and are not published publicly.</li>
+          <li>Results are available only to authorized teachers through the teacher dashboard.</li>
           <li>
             This is a preliminary learning profile for educational guidance only. It is not an
             official certification and does not assign final team roles.

@@ -1,83 +1,43 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { buildStudentResult } from "@/lib/report";
-import { ROLE_PROFILES, type RoleKey } from "@/lib/roles";
-import type { TeacherReport } from "@/lib/report";
 
-export const dynamic = "force-dynamic";
+// Student-facing post-submission page.
+//
+// Intentionally a simple confirmation only. Students must NOT see their score,
+// role tendencies, strengths, growth areas, or any analysis — that is available
+// to authorized teachers only, in the teacher dashboard. This page does not query
+// the submission, so older/bookmarked result links also reveal nothing.
 
-export default async function ResultPage({
-  params,
-}: {
-  params: Promise<{ submissionId: string }>;
-}) {
-  const { submissionId } = await params;
+export const metadata = {
+  title: "Submission received · VEX IQ Role Readiness",
+};
 
-  const submission = await prisma.studentSubmission.findUnique({
-    where: { id: submissionId },
-  });
-  if (!submission) notFound();
-
-  const report = JSON.parse(submission.teacherReportJson) as TeacherReport;
-  const result = buildStudentResult({
-    primaryRole: submission.primaryRole as RoleKey,
-    secondaryRole: submission.secondaryRole as RoleKey,
-    combinedStrengths: report.combinedStrengths,
-    balancedLearner: report.balancedLearner,
-  });
-
-  const primaryProfile = ROLE_PROFILES[result.primaryRole];
-  const displayName = submission.nickname || submission.studentName;
-
+export default function SubmissionReceivedPage() {
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div className="text-center">
-        <span className="inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-semibold text-emerald-700">
-          🎉 Great work, {displayName}!
-        </span>
-        <h1 className="mt-3 text-3xl font-extrabold text-slate-900">Your learning profile</h1>
-        <p className="mt-1 text-slate-500">This is a preliminary profile — a starting point, not a final role.</p>
-      </div>
-
-      <div className="card border-brand-200 bg-brand-50 text-center">
-        <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">
-          {result.balancedLearner
-            ? "Balanced Team Learner"
-            : result.combinedStrengths
-              ? "Combined strengths"
-              : "Strongest role tendency"}
-        </p>
-        <h2 className="mt-2 text-3xl font-extrabold text-brand-800">{result.headline}</h2>
-        {!result.balancedLearner && (
-          <p className="mt-3 text-lg text-slate-700">
-            You may also be strong in: <strong>{result.secondaryRoleLabel}</strong>
-          </p>
-        )}
-      </div>
-
-      <div className="card">
-        <h3 className="text-xl font-bold text-slate-900">What this means</h3>
-        <p className="mt-2 text-slate-700">{result.whatThisMeans}</p>
-        <p className="mt-3 text-sm font-medium text-brand-700">{primaryProfile.tagline}</p>
-      </div>
-
-      <div className="card border-amber-200 bg-amber-50">
-        <h3 className="text-xl font-bold text-amber-900">⭐ Recommended next practice</h3>
-        <p className="mt-2 text-amber-900/90">{result.recommendedPractice}</p>
-      </div>
-
+    <div className="mx-auto max-w-xl">
       <div className="card text-center">
-        <p className="text-lg font-semibold text-slate-800">{result.reminder}</p>
-        <p className="mt-2 text-sm text-slate-500">
-          Your teacher has received a more detailed report to help support your learning.
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl">
+          ✓
+        </div>
+        <h1 className="mt-4 text-2xl font-extrabold text-slate-900 sm:text-3xl">
+          Submission received
+        </h1>
+        <p className="mt-3 text-base text-slate-600">
+          Thank you. Your answers have been submitted successfully.
         </p>
-      </div>
+        <p className="mt-2 text-base text-slate-600">
+          Your teacher can review the assessment summary from the teacher dashboard.
+        </p>
 
-      <div className="flex justify-center">
-        <Link href="/" className="btn-secondary">
-          Back to home
-        </Link>
+        <div className="mt-6">
+          <Link href="/" className="btn-primary w-full sm:w-auto">
+            Back to home
+          </Link>
+        </div>
+
+        <p className="mt-6 text-sm text-slate-400">
+          This assessment is used to help teachers understand learning strengths. Results are not
+          shown publicly.
+        </p>
       </div>
     </div>
   );

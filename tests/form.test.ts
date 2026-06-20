@@ -55,6 +55,12 @@ console.log("School-name form tests\n");
   check("full submission with schoolName + answers succeeds", r.success, JSON.stringify(r.success ? null : r.error.errors[0]));
 }
 
+// 2b. An incomplete submission (not every question answered) still fails.
+{
+  const r = submissionSchema.safeParse({ student: validStudent, answers: fullAnswers.slice(0, 5) });
+  check("incomplete submission still fails", !r.success);
+}
+
 // 3. Missing schoolName fails.
 {
   const r = studentInfoSchema.safeParse({ ...validStudent, schoolName: "" });

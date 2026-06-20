@@ -39,7 +39,7 @@ export default async function SubmissionDetailPage({
 
       {/* Student info */}
       <div className="card">
-        <h1 className="text-2xl font-extrabold text-slate-900">
+        <h1 className="break-words text-2xl font-extrabold text-slate-900">
           {submission.studentName}
           {submission.nickname ? (
             <span className="text-slate-400"> ({submission.nickname})</span>

@@ -14,19 +14,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <div className="flex min-h-screen flex-col">
           <header className="border-b border-slate-200 bg-white">
-            <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+            <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-4">
               <Link href="/" className="flex items-center gap-2 font-bold text-brand-700">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 text-white">
                   IQ
                 </span>
-                <span className="text-lg leading-tight">
+                <span className="text-base leading-tight sm:text-lg">
                   VEX IQ Role Readiness
                   <span className="block text-xs font-medium text-slate-400">
                     Preliminary learning profile
                   </span>
                 </span>
               </Link>
-              <nav className="flex items-center gap-3 text-sm font-semibold">
+              <nav className="flex items-center gap-3 text-sm font-semibold sm:gap-4">
                 <Link href="/assessment" className="text-slate-600 hover:text-brand-700">
                   Start assessment
                 </Link>
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </nav>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6 sm:py-8">{children}</main>
           <footer className="border-t border-slate-200 bg-white">
             <div className="mx-auto max-w-5xl px-4 py-6 text-center text-xs text-slate-400">
               This tool provides a preliminary learning profile for educational guidance and

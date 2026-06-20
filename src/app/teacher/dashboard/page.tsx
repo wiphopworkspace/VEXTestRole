@@ -174,72 +174,117 @@ export default async function DashboardPage({
           </label>
           <input id="date" name="date" type="date" className="input" defaultValue={sp.date ?? ""} />
         </div>
-        <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-6">
-          <button type="submit" className="btn-primary">
+        <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-end lg:col-span-6">
+          <button type="submit" className="btn-primary w-full sm:w-auto">
             Apply filters
           </button>
-          <Link href="/teacher/dashboard" className="btn-secondary">
+          <Link href="/teacher/dashboard" className="btn-secondary w-full sm:w-auto">
             Reset
           </Link>
-          <a href={`/api/teacher/export${exportQuery ? `?${exportQuery}` : ""}`} className="btn-secondary ml-auto">
+          <a
+            href={`/api/teacher/export${exportQuery ? `?${exportQuery}` : ""}`}
+            className="btn-secondary w-full sm:ml-auto sm:w-auto"
+          >
             ⬇ Export CSV
           </a>
         </div>
       </form>
 
-      {/* Table */}
-      <div className="card overflow-x-auto p-0">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Student</th>
-              <th className="px-4 py-3">School</th>
-              <th className="px-4 py-3">Score</th>
-              <th className="px-4 py-3">Level</th>
-              <th className="px-4 py-3">Primary</th>
-              <th className="px-4 py-3">Secondary</th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {submissions.length === 0 && (
+      {submissions.length === 0 && (
+        <div className="card text-center text-slate-400">
+          No submissions match these filters yet.
+        </div>
+      )}
+
+      {/* Desktop: table */}
+      {submissions.length > 0 && (
+        <div className="card hidden overflow-x-auto p-0 md:block">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-slate-400">
-                  No submissions match these filters yet.
-                </td>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Student</th>
+                <th className="px-4 py-3">School</th>
+                <th className="px-4 py-3">Score</th>
+                <th className="px-4 py-3">Level</th>
+                <th className="px-4 py-3">Primary</th>
+                <th className="px-4 py-3">Secondary</th>
+                <th className="px-4 py-3"></th>
               </tr>
-            )}
-            {submissions.map((s) => (
-              <tr key={s.id} className="hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-500">
-                  {new Date(s.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3 font-semibold text-slate-800">
-                  {s.studentName}
-                  {s.nickname ? <span className="text-slate-400"> ({s.nickname})</span> : null}
-                </td>
-                <td className="px-4 py-3 text-slate-600">
-                  {s.schoolName ?? <span className="text-slate-300">—</span>}
-                  {s.teamName ? <span className="text-slate-400"> · {s.teamName}</span> : null}
-                </td>
-                <td className="px-4 py-3 font-semibold text-slate-800">{s.totalUnderstandingScore}%</td>
-                <td className="px-4 py-3 text-slate-600">{s.understandingLevel}</td>
-                <td className="px-4 py-3 text-slate-600">{roleLabel(s.primaryRole)}</td>
-                <td className="px-4 py-3 text-slate-600">{roleLabel(s.secondaryRole)}</td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/teacher/submissions/${s.id}`}
-                    className="font-semibold text-brand-600 hover:text-brand-700"
-                  >
-                    View report →
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {submissions.map((s) => (
+                <tr key={s.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-3 text-slate-500">
+                    {new Date(s.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-800">
+                    {s.studentName}
+                    {s.nickname ? <span className="text-slate-400"> ({s.nickname})</span> : null}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">
+                    {s.schoolName ?? <span className="text-slate-300">—</span>}
+                    {s.teamName ? <span className="text-slate-400"> · {s.teamName}</span> : null}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-800">{s.totalUnderstandingScore}%</td>
+                  <td className="px-4 py-3 text-slate-600">{s.understandingLevel}</td>
+                  <td className="px-4 py-3 text-slate-600">{roleLabel(s.primaryRole)}</td>
+                  <td className="px-4 py-3 text-slate-600">{roleLabel(s.secondaryRole)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/teacher/submissions/${s.id}`}
+                      className="font-semibold text-brand-600 hover:text-brand-700"
+                    >
+                      View report →
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Mobile / tablet: stacked cards */}
+      {submissions.length > 0 && (
+        <div className="space-y-3 md:hidden">
+          {submissions.map((s) => (
+            <div key={s.id} className="card">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="break-words font-bold text-slate-900">
+                    {s.studentName}
+                    {s.nickname ? <span className="font-normal text-slate-400"> ({s.nickname})</span> : null}
+                  </p>
+                  <p className="break-words text-sm text-slate-600">
+                    {s.schoolName ?? "—"}
+                    {s.teamName ? <span className="text-slate-400"> · {s.teamName}</span> : null}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-lg bg-brand-50 px-2 py-1 text-sm font-bold text-brand-700">
+                  {s.totalUnderstandingScore}%
+                </span>
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                <dt className="text-slate-400">Level</dt>
+                <dd className="text-right text-slate-700">{s.understandingLevel}</dd>
+                <dt className="text-slate-400">Primary</dt>
+                <dd className="text-right text-slate-700">{roleLabel(s.primaryRole)}</dd>
+                <dt className="text-slate-400">Secondary</dt>
+                <dd className="text-right text-slate-700">{roleLabel(s.secondaryRole)}</dd>
+                <dt className="text-slate-400">Date</dt>
+                <dd className="text-right text-slate-700">{new Date(s.createdAt).toLocaleDateString()}</dd>
+              </dl>
+              <Link
+                href={`/teacher/submissions/${s.id}`}
+                className="btn-secondary mt-4 w-full text-sm"
+              >
+                View report →
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
