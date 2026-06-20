@@ -1,12 +1,14 @@
 // Teacher report generator for the VEX IQ Role Readiness Assessment.
 //
 // Turns a ScoreResult plus the raw answers into a structured, teacher-readable
-// report: role tendencies, strengths, growth areas, a training plan, an answer
-// review, and risk flags. All language is encouraging and clearly preliminary.
+// report: a suggested focus, additional strength area, a normalized role
+// breakdown, suggested growth areas, a practice direction, an answer review, and
+// supportive flags. All language is encouraging and clearly preliminary — this
+// is a learning profile, not a fixed role assignment.
 
 import { QUESTIONS_BY_ID } from "./questions";
 import { ROLE_PROFILES, roleLabel, type RoleKey } from "./roles";
-import type { ScoreResult } from "./scoring";
+import { GROWTH_THRESHOLD, type RoleBreakdownItem, type ScoreResult } from "./scoring";
 
 export interface AnswerReviewItem {
   questionId: string;
@@ -37,6 +39,19 @@ export interface StudentResult {
   reminder: string;
 }
 
+/** One row of the normalized role table shown to teachers. */
+export interface RoleBreakdownRow {
+  role: RoleKey;
+  label: string;
+  raw: number;
+  max: number;
+  /** 0..1 */
+  normalized: number;
+  /** rounded percentage for display */
+  percent: number;
+  interpretation: string;
+}
+
 export interface TeacherReport {
   primaryRole: RoleKey;
   primaryRoleLabel: string;
@@ -44,9 +59,14 @@ export interface TeacherReport {
   secondaryRoleLabel: string;
   combinedStrengths: boolean;
   balancedLearner: boolean;
-  suggestedTeamRole: string;
+  /** Softly-worded suggested focus line. */
+  suggestedFocus: string;
   strengthExplanation: string;
+  roleBreakdown: RoleBreakdownRow[];
+  normalizationNote: string;
   growthAreas: { role: RoleKey; label: string; note: string }[];
+  /** Shown when there are no growth areas below threshold. */
+  growthAreasNote: string;
   recommendedTrainingPlan: string[];
   answerReview: AnswerReviewItem[];
   riskFlags: RiskFlag[];
@@ -55,7 +75,17 @@ export interface TeacherReport {
 
 const REMINDER =
   "Remember: this is not a fixed role. VEX IQ students can grow in every role.";
-const CAUTION = "This is a preliminary profile, not a fixed role assignment.";
+const CAUTION = "This is a preliminary learning profile, not a fixed role assignment.";
+const NORMALIZATION_NOTE =
+  "Role percentages compare the student's earned points with the maximum possible points for that role in this assessment. This helps reduce bias when different roles appear a different number of times.";
+const NO_GROWTH_NOTE =
+  "No urgent growth area identified from this short assessment.";
+
+function interpretNormalized(normalized: number): string {
+  if (normalized >= 0.8) return "Strong understanding";
+  if (normalized >= GROWTH_THRESHOLD) return "Developing";
+  return "Needs more observation";
+}
 
 interface StudentResultInput {
   primaryRole: RoleKey;
@@ -64,22 +94,22 @@ interface StudentResultInput {
   balancedLearner: boolean;
 }
 
-/** Build the encouraging, student-facing result. */
+/** Build the encouraging, student-facing result (used internally / in tests). */
 export function buildStudentResult(score: StudentResultInput): StudentResult {
   const primary = ROLE_PROFILES[score.primaryRole];
   const secondary = ROLE_PROFILES[score.secondaryRole];
 
   let headline: string;
   if (score.balancedLearner) {
-    headline = "Your tendency right now is: Balanced Team Learner";
+    headline = "Your preliminary profile right now is: Balanced Team Learner";
   } else if (score.combinedStrengths) {
-    headline = `Your strongest role tendencies are: ${primary.label} + ${secondary.label} (combined strengths)`;
+    headline = `Your strongest preliminary tendencies are: ${primary.label} + ${secondary.label} (close strengths)`;
   } else {
-    headline = `Your strongest role tendency is: ${primary.label}`;
+    headline = `Your strongest preliminary tendency is: ${primary.label}`;
   }
 
   const whatThisMeans = score.balancedLearner
-    ? "Your answers show steady understanding across many parts of a VEX IQ team. You can be helpful in several roles — a great quality for a teammate. With a little more practice in one area, a clear strength will start to stand out."
+    ? "Your answers show steady understanding across many parts of a VEX IQ team. You can be helpful in several areas — a great quality for a teammate. With a little more practice in one area, a clearer strength will start to stand out."
     : primary.studentMeaning;
 
   return {
@@ -113,16 +143,29 @@ function buildAnswerReview(score: ScoreResult): AnswerReviewItem[] {
   });
 }
 
-/** Compute the suggested team role string. */
-function suggestedTeamRole(score: ScoreResult): string {
+/** Softly-worded suggested focus line. */
+function suggestedFocus(score: ScoreResult): string {
   if (score.balancedLearner) {
-    return "Balanced Team Learner — could rotate through roles to discover a best fit.";
+    return "Balanced preliminary profile — the student shows close strengths across several areas. Rotating through focus areas can help a clearer direction emerge.";
   }
   const primary = roleLabel(score.primaryRole);
+  const secondary = roleLabel(score.secondaryRole);
   if (score.combinedStrengths) {
-    return `${primary} with ${roleLabel(score.secondaryRole)} support (combined strengths).`;
+    return `Suggested focus: ${primary} with ${secondary} (close preliminary strengths).`;
   }
-  return `${primary} (with ${roleLabel(score.secondaryRole)} as a secondary area to develop).`;
+  return `Suggested focus: ${primary} (with ${secondary} as an additional area to develop).`;
+}
+
+function toRoleBreakdownRows(items: RoleBreakdownItem[]): RoleBreakdownRow[] {
+  return items.map((it) => ({
+    role: it.role,
+    label: ROLE_PROFILES[it.role].label,
+    raw: it.raw,
+    max: it.max,
+    normalized: it.normalized,
+    percent: Math.round(it.normalized * 100),
+    interpretation: interpretNormalized(it.normalized),
+  }));
 }
 
 /**
@@ -132,7 +175,6 @@ function suggestedTeamRole(score: ScoreResult): string {
 function buildRiskFlags(score: ScoreResult): RiskFlag[] {
   const flags: RiskFlag[] = [];
 
-  // Helper: did the student answer the rules / student-centered items correctly?
   const wrongInCategory = (matcher: (category: string) => boolean): boolean => {
     const relevant = score.scoredAnswers.filter((a) => {
       const q = QUESTIONS_BY_ID[a.questionId];
@@ -143,18 +185,18 @@ function buildRiskFlags(score: ScoreResult): RiskFlag[] {
     return wrong / relevant.length >= 0.5;
   };
 
-  if (wrongInCategory((c) => c.includes("rule"))) {
+  if (wrongInCategory((c) => c.includes("rule") || c.includes("safety"))) {
     flags.push({
       key: "low_rules_awareness",
-      label: "Low rules awareness",
-      note: "Several rules-related questions were missed. Practice using the current game manual together.",
+      label: "Rules/safety: needs more observation",
+      note: "Several rules/safety questions were missed. Practice using the current game manual together.",
     });
   }
 
   if (wrongInCategory((c) => c.includes("student-centered"))) {
     flags.push({
       key: "low_student_centered",
-      label: "Low student-centered understanding",
+      label: "Student-centered work: needs more observation",
       note: "Review why students (not adults) should lead the building, coding, and notebook work.",
     });
   }
@@ -162,7 +204,7 @@ function buildRiskFlags(score: ScoreResult): RiskFlag[] {
   if (score.roleScores.TeamCollaborator <= 0) {
     flags.push({
       key: "low_collaboration",
-      label: "Low collaboration signal",
+      label: "Collaboration: needs more observation",
       note: "Collaboration answers were low or negative. Encourage respectful teamwork and communication activities.",
     });
   }
@@ -170,8 +212,8 @@ function buildRiskFlags(score: ScoreResult): RiskFlag[] {
   if (score.balancedLearner && score.totalUnderstandingScore < 50) {
     flags.push({
       key: "low_role_clarity",
-      label: "Low role clarity",
-      note: "No clear role strength yet and overall understanding is still developing. Rotating roles with guided practice can help.",
+      label: "Role direction still emerging",
+      note: "No clear focus area yet and overall understanding is still developing. Rotating roles with guided practice can help.",
     });
   }
 
@@ -184,8 +226,8 @@ export function buildTeacherReport(score: ScoreResult): TeacherReport {
   const secondary = ROLE_PROFILES[score.secondaryRole];
 
   const strengthExplanation = score.balancedLearner
-    ? "This student shows balanced understanding across multiple team areas. They are flexible and can contribute in several roles. Targeted practice in one area will help a clear strength emerge."
-    : `This student shows the strongest tendency toward ${primary.label}. ${primary.description} Their secondary tendency is ${secondary.label}.`;
+    ? "This student shows a balanced preliminary profile across several team areas. They can contribute flexibly; guided practice in one area will help a clearer strength emerge."
+    : `This student's strongest preliminary tendency is toward ${primary.label}. ${primary.description} Their additional strength area is ${secondary.label}.`;
 
   const trainingPlan: string[] = [...primary.trainingPlan];
   if (!score.balancedLearner && score.secondaryRole !== score.primaryRole) {
@@ -207,9 +249,12 @@ export function buildTeacherReport(score: ScoreResult): TeacherReport {
     secondaryRoleLabel: secondary.label,
     combinedStrengths: score.combinedStrengths,
     balancedLearner: score.balancedLearner,
-    suggestedTeamRole: suggestedTeamRole(score),
+    suggestedFocus: suggestedFocus(score),
     strengthExplanation,
+    roleBreakdown: toRoleBreakdownRows(score.roleBreakdown),
+    normalizationNote: NORMALIZATION_NOTE,
     growthAreas,
+    growthAreasNote: growthAreas.length === 0 ? NO_GROWTH_NOTE : "",
     recommendedTrainingPlan: trainingPlan,
     answerReview: buildAnswerReview(score),
     riskFlags: buildRiskFlags(score),

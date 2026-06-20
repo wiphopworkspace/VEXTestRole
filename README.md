@@ -109,20 +109,35 @@ and `TEACHER_NOTIFICATION_EMAIL` are set. If any is missing, email is skipped, t
 report is stored, and the dashboard shows **"Email delivery is not configured."**
 Students are never shown or told about email delivery.
 
-## Scoring design
+## Scoring design (normalized, bias-reduced)
 
 - **Total understanding score** = percentage of correct answers.
-- **Role scores** = sum of each selected choice's role weights, plus a bonus added to a
+- **Raw role score** = sum of each selected choice's role weights, plus a bonus added to a
   question's tagged roles when the answer is correct.
-- **Primary / secondary role** = the two highest role scores.
-- If the top two are within 10%, they are shown as **combined strengths**.
-- If all role scores cluster closely, the student is a **Balanced Team Learner**.
-- **Growth areas** = the lowest 1–2 role scores.
-- **Understanding level**: 0–40 Needs Foundation · 41–65 Developing ·
-  66–80 Ready to Join a Team · 81–100 Competition Ready.
+- **Normalized role score** = `earnedRoleScore / maxPossibleRoleScoreForThatRole`, where the
+  maximum is the points a perfect set of answers would earn for that role. Roles are compared
+  by this **percentage**, not by raw totals — so a role that appears on more questions (e.g.
+  Team Collaborator) cannot dominate, and a role with fewer questions is not mistaken for a
+  weakness. A student who answers everything correctly reaches 100% on every role.
+- **Suggested focus / additional strength area** = the two highest **normalized** roles. Ties
+  break by role order, so no role wins a tie purely on raw total.
+- If the top two normalized scores are within 10 points, they are shown as **close preliminary
+  strengths**.
+- If three or more roles are within 10 points of the top, it is a **balanced preliminary profile**.
+- **Suggested growth areas** = roles whose normalized score is below ~55% (up to 2). If none are
+  below the threshold, the report says "No urgent growth area identified from this short
+  assessment." A role at 100% is never a growth area.
+- **Preliminary understanding level**: 0–40 Needs Foundation · 41–65 Developing ·
+  66–80 Ready to Join a Team · 81–100 Ready for Pilot Practice.
+
+Results are a **preliminary learning profile**, reviewed only by teachers in the dashboard —
+students see a confirmation only. The teacher report shows a normalized role table
+(role · raw · max · percentage · interpretation), a suggested focus, suggested growth areas, a
+recommended practice direction, an answer-by-answer review, and a disclaimer that this is not a
+fixed role assignment.
 
 Key logic lives in dedicated, framework-free files:
-`src/lib/scoring.ts` (scoring engine) and `src/lib/report.ts` (report generator).
+`src/lib/scoring.ts` (scoring engine + normalization) and `src/lib/report.ts` (report generator).
 
 ## Deployment (Netlify + Supabase/Postgres)
 

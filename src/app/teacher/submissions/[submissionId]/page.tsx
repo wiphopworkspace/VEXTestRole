@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { isTeacherAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ROLE_KEYS, ROLE_PROFILES, type RoleKey, type RoleScores } from "@/lib/roles";
-import type { TeacherReport } from "@/lib/report";
+import { scoreSubmission, type SubmittedAnswer } from "@/lib/scoring";
+import { buildTeacherReport } from "@/lib/report";
 
 export const dynamic = "force-dynamic";
+
+const DISCLAIMER =
+  "This result is a preliminary learning profile based on responses to a short assessment. It should be used together with teacher observation, hands-on practice, and student reflection. It should not be used as a fixed role assignment.";
 
 export default async function SubmissionDetailPage({
   params,
@@ -19,12 +22,18 @@ export default async function SubmissionDetailPage({
   const { submissionId } = await params;
   const submission = await prisma.studentSubmission.findUnique({
     where: { id: submissionId },
+    include: { answers: true },
   });
   if (!submission) notFound();
 
-  const report = JSON.parse(submission.teacherReportJson) as TeacherReport;
-  const roleScores = JSON.parse(submission.roleScoresJson) as RoleScores;
-  const maxRoleScore = Math.max(1, ...ROLE_KEYS.map((r) => roleScores[r]));
+  // Re-score from the stored answers so the fair, normalized logic applies to
+  // every submission (including older rows) without re-writing the database.
+  const answers: SubmittedAnswer[] = submission.answers.map((a) => ({
+    questionId: a.questionId,
+    selectedChoiceId: a.selectedChoiceId,
+  }));
+  const score = scoreSubmission(answers);
+  const report = buildTeacherReport(score);
 
   return (
     <div className="space-y-6">
@@ -35,6 +44,12 @@ export default async function SubmissionDetailPage({
         <span className="text-sm text-slate-500">
           {new Date(submission.createdAt).toLocaleString()}
         </span>
+      </div>
+
+      {/* Preliminary-profile disclaimer (calm notice, not an error) */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <span className="font-semibold text-slate-700">ℹ Preliminary learning profile.</span>{" "}
+        {DISCLAIMER}
       </div>
 
       {/* Student info */}
@@ -72,109 +87,143 @@ export default async function SubmissionDetailPage({
         </div>
       </div>
 
-      {/* Caution */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-        ⚠ {report.caution}
-      </div>
-
       {/* Scores */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card">
           <p className="text-sm font-semibold text-slate-500">Total understanding score</p>
           <p className="mt-1 text-4xl font-extrabold text-slate-900">
-            {submission.totalUnderstandingScore}%
+            {score.totalUnderstandingScore}%
           </p>
           <p className="mt-1 text-sm font-semibold text-brand-600">
-            Level: {submission.understandingLevel}
+            Preliminary level: {score.understandingLevel}
           </p>
         </div>
         <div className="card">
-          <p className="text-sm font-semibold text-slate-500">Role tendency</p>
-          <p className="mt-1 text-lg">
-            <strong>Primary:</strong> {report.primaryRoleLabel}
-          </p>
-          <p className="text-lg">
-            <strong>Secondary:</strong> {report.secondaryRoleLabel}
-          </p>
-          {report.combinedStrengths && !report.balancedLearner && (
-            <p className="mt-1 text-sm text-brand-600">Combined strengths (top two are close)</p>
-          )}
-          {report.balancedLearner && (
-            <p className="mt-1 text-sm text-brand-600">Balanced Team Learner</p>
+          <p className="text-sm font-semibold text-slate-500">Preliminary role tendency</p>
+          {report.balancedLearner ? (
+            <p className="mt-1 text-lg font-semibold text-brand-700">Balanced preliminary profile</p>
+          ) : (
+            <>
+              <p className="mt-1 text-lg">
+                <strong>Suggested focus:</strong> {report.primaryRoleLabel}
+              </p>
+              <p className="text-lg">
+                <strong>Additional strength area:</strong> {report.secondaryRoleLabel}
+              </p>
+              {report.combinedStrengths && (
+                <p className="mt-1 text-sm text-brand-600">Close preliminary strengths (top two are within 10%)</p>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Role score breakdown */}
+      {/* Normalized role breakdown */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Role score breakdown</h2>
-        <div className="mt-4 space-y-3">
-          {ROLE_KEYS.map((r) => {
-            const score = roleScores[r];
-            const pct = Math.max(0, Math.round((score / maxRoleScore) * 100));
-            return (
-              <div key={r}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold text-slate-700">{ROLE_PROFILES[r].label}</span>
-                  <span className="text-slate-500">{score}</span>
-                </div>
-                <div className="mt-1 h-3 w-full overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full rounded-full bg-brand-500"
-                    style={{ width: `${score <= 0 ? 0 : pct}%` }}
-                  />
-                </div>
+        <h2 className="text-xl font-bold text-slate-900">Role score breakdown (normalized)</h2>
+        <p className="mt-1 text-sm text-slate-500">{report.normalizationNote}</p>
+
+        {/* Desktop table */}
+        <div className="mt-4 hidden overflow-x-auto sm:block">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="py-2 pr-3">Role</th>
+                <th className="py-2 pr-3">Raw</th>
+                <th className="py-2 pr-3">Max</th>
+                <th className="py-2 pr-3">Percentage</th>
+                <th className="py-2 pr-3">Interpretation</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {report.roleBreakdown.map((r) => (
+                <tr key={r.role}>
+                  <td className="py-2 pr-3 font-semibold text-slate-700">{r.label}</td>
+                  <td className="py-2 pr-3 text-slate-500">{r.raw}</td>
+                  <td className="py-2 pr-3 text-slate-500">{r.max}</td>
+                  <td className="py-2 pr-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-brand-500" style={{ width: `${r.percent}%` }} />
+                      </div>
+                      <span className="font-semibold text-slate-700">{r.percent}%</span>
+                    </div>
+                  </td>
+                  <td className="py-2 pr-3 text-slate-600">{r.interpretation}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile stacked list */}
+        <div className="mt-4 space-y-3 sm:hidden">
+          {report.roleBreakdown.map((r) => (
+            <div key={r.role}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold text-slate-700">{r.label}</span>
+                <span className="font-semibold text-slate-700">{r.percent}%</span>
               </div>
-            );
-          })}
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-brand-500" style={{ width: `${r.percent}%` }} />
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                {r.raw} / {r.max} points · {r.interpretation}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Suggested role + strength */}
+      {/* Suggested focus + strength */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Suggested team role</h2>
-        <p className="mt-2 text-slate-700">{report.suggestedTeamRole}</p>
+        <h2 className="text-xl font-bold text-slate-900">Suggested focus</h2>
+        <p className="mt-2 text-slate-700">{report.suggestedFocus}</p>
         <h3 className="mt-4 font-bold text-slate-900">Strength explanation</h3>
-        <p className="mt-1 text-slate-700">{report.strengthExplanation}</p>
+        <p className="mt-1 break-words text-slate-700">{report.strengthExplanation}</p>
       </div>
 
       {/* Growth areas */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Growth areas (more practice recommended)</h2>
-        <ul className="mt-3 space-y-3">
-          {report.growthAreas.map((g) => (
-            <li key={g.role} className="rounded-xl bg-slate-50 p-4">
-              <p className="font-semibold text-slate-800">{g.label}</p>
-              <p className="text-sm text-slate-600">{g.note}</p>
-            </li>
-          ))}
-        </ul>
+        <h2 className="text-xl font-bold text-slate-900">Suggested growth areas (area for guided practice)</h2>
+        {report.growthAreas.length === 0 ? (
+          <p className="mt-2 text-sm text-emerald-700">{report.growthAreasNote}</p>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {report.growthAreas.map((g) => (
+              <li key={g.role} className="rounded-xl bg-slate-50 p-4">
+                <p className="font-semibold text-slate-800">{g.label}</p>
+                <p className="break-words text-sm text-slate-600">{g.note}</p>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Training plan */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Recommended training plan</h2>
+        <h2 className="text-xl font-bold text-slate-900">Recommended practice direction</h2>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-slate-700">
           {report.recommendedTrainingPlan.map((step, i) => (
-            <li key={i}>{step}</li>
+            <li key={i} className="break-words">{step}</li>
           ))}
         </ol>
       </div>
 
-      {/* Risk flags */}
+      {/* Supportive flags */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Risk flags</h2>
+        <h2 className="text-xl font-bold text-slate-900">Areas needing more observation</h2>
         {report.riskFlags.length === 0 ? (
           <p className="mt-2 text-sm text-emerald-700">
-            No risk flags. This student shows solid awareness of rules, student-centered work, and
+            No flags. This student shows solid awareness of rules, student-centered work, and
             collaboration.
           </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {report.riskFlags.map((f) => (
-              <li key={f.key} className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-                <p className="font-semibold text-rose-800">{f.label}</p>
-                <p className="text-sm text-rose-700">{f.note}</p>
+              <li key={f.key} className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                <p className="font-semibold text-amber-800">{f.label}</p>
+                <p className="break-words text-sm text-amber-700">{f.note}</p>
               </li>
             ))}
           </ul>
@@ -188,7 +237,7 @@ export default async function SubmissionDetailPage({
           {report.answerReview.map((a, idx) => (
             <div key={a.questionId} className="rounded-xl border border-slate-200 p-4">
               <div className="flex items-start justify-between gap-3">
-                <p className="font-semibold text-slate-800">
+                <p className="break-words font-semibold text-slate-800">
                   {idx + 1}. {a.questionText}
                 </p>
                 <span
@@ -202,15 +251,15 @@ export default async function SubmissionDetailPage({
                 </span>
               </div>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{a.category}</p>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 break-words text-sm text-slate-600">
                 <strong>Chose:</strong> {a.selectedChoiceText}
               </p>
               {!a.isCorrect && (
-                <p className="text-sm text-emerald-700">
+                <p className="break-words text-sm text-emerald-700">
                   <strong>Stronger answer:</strong> {a.correctChoiceText}
                 </p>
               )}
-              <p className="mt-1 text-sm italic text-slate-500">{a.feedback}</p>
+              <p className="mt-1 break-words text-sm italic text-slate-500">{a.feedback}</p>
             </div>
           ))}
         </div>

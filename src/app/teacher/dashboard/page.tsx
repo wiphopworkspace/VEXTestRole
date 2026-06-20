@@ -100,6 +100,14 @@ export default async function DashboardPage({
         </div>
       </div>
 
+      {/* Preliminary-profile disclaimer (calm notice, not an error) */}
+      <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        <span className="font-semibold text-slate-700">ℹ Preliminary learning profile.</span>{" "}
+        This result is a preliminary learning profile based on responses to a short assessment. It
+        should be used together with teacher observation, hands-on practice, and student reflection.
+        It should not be used as a fixed role assignment.
+      </div>
+
       {!emailConfigured && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Email delivery is not configured. Results are stored successfully and viewable here.
@@ -117,7 +125,7 @@ export default async function DashboardPage({
           <p className="mt-1 text-3xl font-extrabold text-slate-900">{avgScore}%</p>
         </div>
         <div className="card">
-          <p className="text-sm font-semibold text-slate-500">Primary role spread</p>
+          <p className="text-sm font-semibold text-slate-500">Suggested focus spread</p>
           <div className="mt-2 flex flex-wrap gap-1 text-xs">
             {ROLE_KEYS.map((r) => (
               <span key={r} className="rounded-full bg-slate-100 px-2 py-1 font-medium text-slate-600">
@@ -157,7 +165,7 @@ export default async function DashboardPage({
         </div>
         <div>
           <label className="label" htmlFor="role">
-            Primary role
+            Suggested focus
           </label>
           <select id="role" name="role" className="input" defaultValue={sp.role ?? ""}>
             <option value="">All</option>
@@ -207,8 +215,8 @@ export default async function DashboardPage({
                 <th className="px-4 py-3">School</th>
                 <th className="px-4 py-3">Score</th>
                 <th className="px-4 py-3">Level</th>
-                <th className="px-4 py-3">Primary</th>
-                <th className="px-4 py-3">Secondary</th>
+                <th className="px-4 py-3">Suggested focus</th>
+                <th className="px-4 py-3">Additional strength</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -268,9 +276,9 @@ export default async function DashboardPage({
               <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 <dt className="text-slate-400">Level</dt>
                 <dd className="text-right text-slate-700">{s.understandingLevel}</dd>
-                <dt className="text-slate-400">Primary</dt>
+                <dt className="text-slate-400">Suggested focus</dt>
                 <dd className="text-right text-slate-700">{roleLabel(s.primaryRole)}</dd>
-                <dt className="text-slate-400">Secondary</dt>
+                <dt className="text-slate-400">Additional strength</dt>
                 <dd className="text-right text-slate-700">{roleLabel(s.secondaryRole)}</dd>
                 <dt className="text-slate-400">Date</dt>
                 <dd className="text-right text-slate-700">{new Date(s.createdAt).toLocaleDateString()}</dd>

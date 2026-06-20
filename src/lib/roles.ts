@@ -150,7 +150,7 @@ export const UNDERSTANDING_LEVELS = [
   { min: 0, max: 40, label: "Needs Foundation" },
   { min: 41, max: 65, label: "Developing" },
   { min: 66, max: 80, label: "Ready to Join a Team" },
-  { min: 81, max: 100, label: "Competition Ready" },
+  { min: 81, max: 100, label: "Ready for Pilot Practice" },
 ] as const;
 
 export function understandingLevel(score: number): string {
