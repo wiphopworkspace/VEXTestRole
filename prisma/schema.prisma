@@ -1,0 +1,63 @@
+// Prisma schema for VEX IQ Role Readiness Assessment.
+//
+// PostgreSQL is the database for BOTH local development and production
+// (Supabase) so there is no provider mismatch between environments.
+//   - DATABASE_URL points at a Postgres connection string in every environment.
+//   - Local dev: use a Supabase connection string or a local Postgres instance.
+//   - Production: use the Supabase connection string (see README).
+//
+// If you must run SQLite locally, temporarily change `provider` to "sqlite"
+// and set DATABASE_URL="file:./dev.db" — but do NOT commit that change, and
+// never use SQLite in production.
+//
+// JSON-shaped data is stored as String columns so the schema works identically
+// across databases. The app serializes/deserializes with JSON.parse/stringify.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model StudentSubmission {
+  id                      String             @id @default(cuid())
+  studentName             String
+  nickname                String?
+  gradeLevel              String
+  className               String
+  teacherEmail            String
+  teamName                String?
+  totalUnderstandingScore Int
+  understandingLevel      String
+  primaryRole             String
+  secondaryRole           String
+  roleScoresJson          String
+  strengthsJson           String
+  growthAreasJson         String
+  teacherReportJson       String
+  emailStatus             String             @default("not_configured")
+  createdAt               DateTime           @default(now())
+  answers                 SubmissionAnswer[]
+
+  @@index([className])
+  @@index([gradeLevel])
+  @@index([primaryRole])
+  @@index([createdAt])
+}
+
+model SubmissionAnswer {
+  id               String            @id @default(cuid())
+  submissionId     String
+  questionId       String
+  selectedChoiceId String
+  isCorrect        Boolean
+  roleWeightsJson  String
+  createdAt        DateTime          @default(now())
+  submission       StudentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId])
+}

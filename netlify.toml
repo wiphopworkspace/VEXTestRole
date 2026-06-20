@@ -1,0 +1,14 @@
+# Netlify configuration for the VEX IQ Role Readiness Assessment (Next.js App Router).
+#
+# Netlify auto-detects Next.js and applies the official @netlify/plugin-nextjs
+# runtime, which handles SSR, Server Components, Route Handlers, and API routes.
+#
+# `npm run build` already runs `prisma generate` before `next build`
+# (see package.json), so the Prisma Client is generated on every Netlify build.
+
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "20"
