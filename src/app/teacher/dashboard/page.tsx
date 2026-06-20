@@ -213,7 +213,7 @@ export default async function DashboardPage({
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Student</th>
                 <th className="px-4 py-3">School</th>
-                <th className="px-4 py-3">Score</th>
+                <th className="px-4 py-3">Understanding</th>
                 <th className="px-4 py-3">Level</th>
                 <th className="px-4 py-3">Suggested focus</th>
                 <th className="px-4 py-3">Additional strength</th>

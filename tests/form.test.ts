@@ -3,7 +3,7 @@
 // Run via: npm test (uses tsx, no test framework).
 
 import { studentInfoSchema, submissionSchema } from "../src/lib/validation";
-import { QUESTIONS } from "../src/lib/questions";
+import { QUESTIONS, isKnowledgeQuestion } from "../src/lib/questions";
 import { buildCsv, type CsvRow } from "../src/lib/csv";
 import { buildStudentResult } from "../src/lib/report";
 import { ROLE_KEYS, type RoleScores } from "../src/lib/roles";
@@ -31,7 +31,7 @@ const validStudent = {
 
 const fullAnswers = QUESTIONS.map((q) => ({
   questionId: q.id,
-  selectedChoiceId: q.correctChoiceId,
+  selectedChoiceId: isKnowledgeQuestion(q) ? q.correctChoiceId : q.choices[0].id,
 }));
 
 function roleScores(): RoleScores {
@@ -96,7 +96,7 @@ console.log("School-name form tests\n");
       schoolName: "Bangkok Robotics School",
       teamName: "Gear Goblins",
       totalUnderstandingScore: 80,
-      understandingLevel: "Competition Ready",
+      understandingLevel: "Strong Understanding",
       primaryRole: "Builder",
       secondaryRole: "Driver",
       roleScores: roleScores(),

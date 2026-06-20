@@ -40,7 +40,7 @@ and teamwork:
 | Route | Purpose |
 | --- | --- |
 | `/` | Landing page, purpose, privacy notice, start + teacher login |
-| `/assessment` | Student info form + 24-question quiz (one question per screen) |
+| `/assessment` | Student info form + quiz (one question per screen): competition-understanding questions + thinking-style questions |
 | `/assessment/result/[submissionId]` | Simple "submission received" confirmation — no score or analysis shown to students |
 | `/teacher/login` | Password login (env `TEACHER_PASSWORD`) |
 | `/teacher/dashboard` | List, search/filter, summary, CSV export |
@@ -109,32 +109,48 @@ and `TEACHER_NOTIFICATION_EMAIL` are set. If any is missing, email is skipped, t
 report is stored, and the dashboard shows **"Email delivery is not configured."**
 Students are never shown or told about email delivery.
 
-## Scoring design (normalized, bias-reduced)
+## Scoring design (two separate dimensions)
 
-- **Total understanding score** = percentage of correct answers.
-- **Raw role score** = sum of each selected choice's role weights, plus a bonus added to a
-  question's tagged roles when the answer is correct.
+The assessment measures **two independent things**, so "knowing the right answer"
+never decides a student's role and no single role can win just by choosing
+sensible answers.
+
+**1. Competition Understanding (knowledge)**
+
+- **Understanding score** = percentage of the *knowledge* questions answered correctly.
+  Knowledge questions add **nothing** to role tendency.
+- **Understanding level**: 0–49 Developing · 50–79 Ready for Guided Practice ·
+  80–100 Strong Understanding. (No "Competition Ready"; a high score means ready for
+  guided practice, not finished.)
+
+**2. Role Tendency / thinking style**
+
+- Built **only** from the forced-choice thinking-style questions, which have **no wrong
+  answer**. Every option is reasonable and maps to one role; picking it adds one point to
+  that role.
 - **Normalized role score** = `earnedRoleScore / maxPossibleRoleScoreForThatRole`, where the
-  maximum is the points a perfect set of answers would earn for that role. Roles are compared
-  by this **percentage**, not by raw totals — so a role that appears on more questions (e.g.
-  Team Collaborator) cannot dominate, and a role with fewer questions is not mistaken for a
-  weakness. A student who answers everything correctly reaches 100% on every role.
-- **Suggested focus / additional strength area** = the two highest **normalized** roles. Ties
-  break by role order, so no role wins a tie purely on raw total.
-- If the top two normalized scores are within 10 points, they are shown as **close preliminary
-  strengths**.
-- If three or more roles are within 10 points of the top, it is a **balanced preliminary profile**.
-- **Suggested growth areas** = roles whose normalized score is below ~55% (up to 2). If none are
-  below the threshold, the report says "No urgent growth area identified from this short
-  assessment." A role at 100% is never a growth area.
-- **Preliminary understanding level**: 0–40 Needs Foundation · 41–65 Developing ·
-  66–80 Ready to Join a Team · 81–100 Ready for Pilot Practice.
+  maximum is how many thinking-style questions offered that role. Roles are compared by this
+  **percentage**, not by raw totals — so a role offered more often cannot dominate, and a role
+  offered less often is not mistaken for a weakness.
+- **Suggested focus / possible additional strength** = the two highest **normalized** roles.
+  Ties break by role order.
+- Top two within 10 points → **close preliminary strengths**; three or more within 10 points →
+  **balanced preliminary profile**.
+- **Suggested growth areas** = roles whose normalized score is below ~55% (up to 2). A role at
+  100% is never a growth area.
+
+The question bank is audited so the correct knowledge answer is **not** systematically the
+longest or the only "good-behavior" option, and correct answers are spread across A/B/C/D.
+Automated **anti-pattern tests** (`tests/scoring.test.ts`) verify that always picking the
+longest answer or always picking the same letter scores near chance and does not produce a
+fixed role, and that different role patterns produce different foci.
 
 Results are a **preliminary learning profile**, reviewed only by teachers in the dashboard —
-students see a confirmation only. The teacher report shows a normalized role table
-(role · raw · max · percentage · interpretation), a suggested focus, suggested growth areas, a
-recommended practice direction, an answer-by-answer review, and a disclaimer that this is not a
-fixed role assignment.
+students see a confirmation only. The teacher report shows the understanding level and the role
+tendency **separately**: a normalized role table (role · raw · max · percentage · interpretation),
+a suggested focus, the **evidence** (which thinking-style choices suggested it), a recommended
+trial activity, suggested growth areas, an answer-by-answer review, and a disclaimer that this is
+a preliminary profile needing hands-on observation — not a fixed or assigned role.
 
 Key logic lives in dedicated, framework-free files:
 `src/lib/scoring.ts` (scoring engine + normalization) and `src/lib/report.ts` (report generator).

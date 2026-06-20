@@ -146,11 +146,13 @@ export function roleLabel(key: RoleKey | string): string {
   return ROLE_PROFILES[key as RoleKey]?.label ?? String(key);
 }
 
+// Competition Understanding bands. These describe knowledge only and are kept
+// deliberately non-final: no "Competition Ready", no "100% means ready". A high
+// score means "ready for guided practice", not a finished or certified student.
 export const UNDERSTANDING_LEVELS = [
-  { min: 0, max: 40, label: "Needs Foundation" },
-  { min: 41, max: 65, label: "Developing" },
-  { min: 66, max: 80, label: "Ready to Join a Team" },
-  { min: 81, max: 100, label: "Ready for Pilot Practice" },
+  { min: 0, max: 49, label: "Developing" },
+  { min: 50, max: 79, label: "Ready for Guided Practice" },
+  { min: 80, max: 100, label: "Strong Understanding" },
 ] as const;
 
 export function understandingLevel(score: number): string {

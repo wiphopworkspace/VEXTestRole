@@ -8,9 +8,10 @@
 // resolve them without the Next.js "@/..." path alias.
 
 import { PrismaClient } from "@prisma/client";
-import { QUESTIONS } from "../src/lib/questions";
+import { QUESTIONS, isKnowledgeQuestion, type Question } from "../src/lib/questions";
 import { scoreSubmission, type SubmittedAnswer } from "../src/lib/scoring";
 import { buildTeacherReport } from "../src/lib/report";
+import type { RoleKey } from "../src/lib/roles";
 
 const prisma = new PrismaClient();
 
@@ -19,8 +20,10 @@ interface DemoStudent {
   nickname?: string;
   schoolName: string;
   teamName?: string;
-  /** Bias the demo answers toward a role by preferring correct answers. */
+  /** Bias knowledge answers toward correct by preferring the correct option. */
   correctRatio: number;
+  /** Bias tendency answers toward this role when it is offered. */
+  preferredRole: RoleKey;
   seed: number;
 }
 
@@ -31,13 +34,15 @@ const DEMO_STUDENTS: DemoStudent[] = [
     schoolName: "Bangkok Robotics School",
     teamName: "Gear Goblins",
     correctRatio: 0.85,
+    preferredRole: "Builder",
     seed: 7,
   },
   {
     studentName: "Priya Sharma",
     schoolName: "Riverside STEM Academy",
     teamName: "Circuit Sparks",
-    correctRatio: 0.55,
+    correctRatio: 0.6,
+    preferredRole: "Programmer",
     seed: 23,
   },
 ];
@@ -54,13 +59,22 @@ function makeRng(seed: number) {
 
 function buildAnswers(student: DemoStudent): SubmittedAnswer[] {
   const rng = makeRng(student.seed);
-  return QUESTIONS.map((q) => {
-    const pickCorrect = rng() < student.correctRatio;
-    if (pickCorrect) {
-      return { questionId: q.id, selectedChoiceId: q.correctChoiceId };
+  return QUESTIONS.map((q: Question) => {
+    if (isKnowledgeQuestion(q)) {
+      const pickCorrect = rng() < student.correctRatio;
+      if (pickCorrect) {
+        return { questionId: q.id, selectedChoiceId: q.correctChoiceId };
+      }
+      const wrong = q.choices.filter((c) => c.id !== q.correctChoiceId);
+      const choice = wrong[Math.floor(rng() * wrong.length)] ?? q.choices[0];
+      return { questionId: q.id, selectedChoiceId: choice.id };
     }
-    const wrong = q.choices.filter((c) => c.id !== q.correctChoiceId);
-    const choice = wrong[Math.floor(rng() * wrong.length)] ?? q.choices[0];
+    // Tendency question: usually pick the student's preferred role when offered.
+    const preferred = q.choices.find((c) => c.role === student.preferredRole);
+    if (preferred && rng() < 0.75) {
+      return { questionId: q.id, selectedChoiceId: preferred.id };
+    }
+    const choice = q.choices[Math.floor(rng() * q.choices.length)];
     return { questionId: q.id, selectedChoiceId: choice.id };
   });
 }

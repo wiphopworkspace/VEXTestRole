@@ -62,7 +62,7 @@ export async function sendReportEmail(input: ReportEmailInput): Promise<EmailSta
           <table style="border-collapse: collapse;">
             <tr><td style="padding:4px 12px 4px 0;"><strong>Student</strong></td><td>${escapeHtml(input.studentName)}</td></tr>
             <tr><td style="padding:4px 12px 4px 0;"><strong>School</strong></td><td>${escapeHtml(input.schoolName)}</td></tr>
-            <tr><td style="padding:4px 12px 4px 0;"><strong>Total understanding</strong></td><td>${input.totalUnderstandingScore}% (${escapeHtml(input.understandingLevel)})</td></tr>
+            <tr><td style="padding:4px 12px 4px 0;"><strong>Competition understanding</strong></td><td>${input.totalUnderstandingScore}% (${escapeHtml(input.understandingLevel)})</td></tr>
             <tr><td style="padding:4px 12px 4px 0;"><strong>Primary role tendency</strong></td><td>${escapeHtml(primary)}</td></tr>
             <tr><td style="padding:4px 12px 4px 0;"><strong>Secondary role tendency</strong></td><td>${escapeHtml(secondary)}</td></tr>
           </table>

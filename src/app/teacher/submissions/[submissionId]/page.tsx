@@ -87,16 +87,12 @@ export default async function SubmissionDetailPage({
         </div>
       </div>
 
-      {/* Scores */}
+      {/* Two separate dimensions: understanding (knowledge) and role tendency */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="card">
-          <p className="text-sm font-semibold text-slate-500">Total understanding score</p>
-          <p className="mt-1 text-4xl font-extrabold text-slate-900">
-            {score.totalUnderstandingScore}%
-          </p>
-          <p className="mt-1 text-sm font-semibold text-brand-600">
-            Preliminary level: {score.understandingLevel}
-          </p>
+          <p className="text-sm font-semibold text-slate-500">Competition understanding</p>
+          <p className="mt-1 text-2xl font-extrabold text-slate-900">{score.understandingLevel}</p>
+          <p className="mt-1 text-sm text-slate-500">{report.understandingSummary}</p>
         </div>
         <div className="card">
           <p className="text-sm font-semibold text-slate-500">Preliminary role tendency</p>
@@ -108,7 +104,7 @@ export default async function SubmissionDetailPage({
                 <strong>Suggested focus:</strong> {report.primaryRoleLabel}
               </p>
               <p className="text-lg">
-                <strong>Additional strength area:</strong> {report.secondaryRoleLabel}
+                <strong>Possible additional strength:</strong> {report.secondaryRoleLabel}
               </p>
               {report.combinedStrengths && (
                 <p className="mt-1 text-sm text-brand-600">Close preliminary strengths (top two are within 10%)</p>
@@ -175,12 +171,32 @@ export default async function SubmissionDetailPage({
         </div>
       </div>
 
-      {/* Suggested focus + strength */}
+      {/* Suggested focus + strength + evidence */}
       <div className="card">
         <h2 className="text-xl font-bold text-slate-900">Suggested focus</h2>
         <p className="mt-2 text-slate-700">{report.suggestedFocus}</p>
-        <h3 className="mt-4 font-bold text-slate-900">Strength explanation</h3>
+        <h3 className="mt-4 font-bold text-slate-900">What this is based on</h3>
         <p className="mt-1 break-words text-slate-700">{report.strengthExplanation}</p>
+
+        {report.evidence.length > 0 && (
+          <>
+            <h3 className="mt-4 font-bold text-slate-900">Evidence (thinking-style choices)</h3>
+            <ul className="mt-2 space-y-2">
+              {report.evidence.map((e, i) => (
+                <li key={i} className="rounded-xl bg-slate-50 p-3 text-sm">
+                  <p className="break-words text-slate-700">
+                    <span className="font-semibold text-violet-700">{e.roleLabel}:</span>{" "}
+                    “{e.choiceText}”
+                  </p>
+                  <p className="mt-1 break-words text-xs text-slate-400">{e.questionText}</p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
+        <h3 className="mt-4 font-bold text-slate-900">Recommended trial activity</h3>
+        <p className="mt-1 break-words text-slate-700">{report.recommendedTrialActivity}</p>
       </div>
 
       {/* Growth areas */}
@@ -232,7 +248,11 @@ export default async function SubmissionDetailPage({
 
       {/* Answer review */}
       <div className="card">
-        <h2 className="text-xl font-bold text-slate-900">Answer review (evidence)</h2>
+        <h2 className="text-xl font-bold text-slate-900">Answer review</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Knowledge questions have a correct answer; thinking-style questions have no wrong answer
+          and simply show which role the choice reflects.
+        </p>
         <div className="mt-4 space-y-4">
           {report.answerReview.map((a, idx) => (
             <div key={a.questionId} className="rounded-xl border border-slate-200 p-4">
@@ -240,26 +260,40 @@ export default async function SubmissionDetailPage({
                 <p className="break-words font-semibold text-slate-800">
                   {idx + 1}. {a.questionText}
                 </p>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${
-                    a.isCorrect
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
-                >
-                  {a.isCorrect ? "Correct" : "Review"}
-                </span>
+                {a.kind === "knowledge" ? (
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-1 text-xs font-bold ${
+                      a.isCorrect
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                    }`}
+                  >
+                    {a.isCorrect ? "Correct" : "Review"}
+                  </span>
+                ) : (
+                  <span className="shrink-0 rounded-full bg-violet-100 px-2 py-1 text-xs font-bold text-violet-700">
+                    Thinking style
+                  </span>
+                )}
               </div>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">{a.category}</p>
               <p className="mt-2 break-words text-sm text-slate-600">
                 <strong>Chose:</strong> {a.selectedChoiceText}
               </p>
-              {!a.isCorrect && (
-                <p className="break-words text-sm text-emerald-700">
-                  <strong>Stronger answer:</strong> {a.correctChoiceText}
+              {a.kind === "knowledge" ? (
+                <>
+                  {!a.isCorrect && (
+                    <p className="break-words text-sm text-emerald-700">
+                      <strong>Stronger answer:</strong> {a.correctChoiceText}
+                    </p>
+                  )}
+                  <p className="mt-1 break-words text-sm italic text-slate-500">{a.feedback}</p>
+                </>
+              ) : (
+                <p className="break-words text-sm text-violet-700">
+                  <strong>Reflects:</strong> {a.reflectsRoleLabel}
                 </p>
               )}
-              <p className="mt-1 break-words text-sm italic text-slate-500">{a.feedback}</p>
             </div>
           ))}
         </div>

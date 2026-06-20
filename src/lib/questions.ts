@@ -2,373 +2,426 @@
 //
 // All concepts are paraphrased in original wording for educational use.
 // No official game manual text is copied. Questions are in English.
+//
+// The bank has TWO kinds of questions:
+//
+//  1. "knowledge"  — Competition Understanding. These DO have a correct answer
+//     and measure whether the student understands VEX IQ expectations, safety,
+//     rules, student-centered work, and basic role responsibilities. They are
+//     written so the correct answer is NOT obviously the longest or the only
+//     "good-behavior" option — distractors are plausible-but-weaker. Knowledge
+//     questions do NOT contribute to role tendency.
+//
+//  2. "tendency"   — Role Tendency / Thinking Style. These have NO wrong answer.
+//     Every option is a reasonable thing a VEX IQ student might do; each option
+//     simply maps to a different role. They are the main driver of the suggested
+//     focus. Picking a role's option adds one tendency point to that role.
+//
+// Keeping the two kinds separate is what stops "knowing the right answer" from
+// deciding a student's role, and stops one broad role (e.g. Team Collaborator)
+// from winning just because a student chooses sensible answers.
 
-import type { RoleKey, RoleWeights } from "./roles";
+import type { RoleKey } from "./roles";
 
-export interface Choice {
+export type QuestionKind = "knowledge" | "tendency";
+
+/** A choice on a knowledge question: it is either correct (1) or not (0). */
+export interface KnowledgeChoice {
   id: string;
   text: string;
-  /** 1 for the correct answer to knowledge/situation questions, otherwise 0. */
   correctnessScore: 0 | 1;
-  roleWeights: RoleWeights;
 }
 
-export interface Question {
+export interface KnowledgeQuestion {
   id: string;
+  kind: "knowledge";
   text: string;
   category: string;
-  roleTags: RoleKey[];
-  choices: Choice[];
+  choices: KnowledgeChoice[];
   correctChoiceId: string;
   /** Feedback shown for the correct answer. */
   feedback: string;
 }
 
-export const QUESTIONS: Question[] = [
+/** A choice on a tendency question: no correctness, just the role it reflects. */
+export interface TendencyChoice {
+  id: string;
+  text: string;
+  role: RoleKey;
+}
+
+export interface TendencyQuestion {
+  id: string;
+  kind: "tendency";
+  text: string;
+  category: string;
+  choices: TendencyChoice[];
+}
+
+export type Question = KnowledgeQuestion | TendencyQuestion;
+
+export function isKnowledgeQuestion(q: Question): q is KnowledgeQuestion {
+  return q.kind === "knowledge";
+}
+
+export function isTendencyQuestion(q: Question): q is TendencyQuestion {
+  return q.kind === "tendency";
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge / Competition Understanding questions (have correct answers).
+// Distractors are plausible misconceptions, not absurd; lengths are balanced so
+// the correct answer is not a length giveaway and is not always the longest.
+// Correct positions are spread across A/B/C/D.
+// ---------------------------------------------------------------------------
+
+const KNOWLEDGE_QUESTIONS: KnowledgeQuestion[] = [
   {
-    id: "q1",
+    id: "k1",
+    kind: "knowledge",
     category: "Builder",
-    roleTags: ["Builder"],
-    text: "Your robot tips over when it drives across a small barrier. What should the team check first?",
-    correctChoiceId: "b",
-    feedback:
-      "Good builders look for mechanical causes such as balance, support, and stability.",
-    choices: [
-      { id: "a", text: "Add more decorations to make it look better.", correctnessScore: 0, roleWeights: { Notebooker: 1 } },
-      { id: "b", text: "Check the robot's center of gravity, wheelbase, and weight distribution.", correctnessScore: 1, roleWeights: { Builder: 3, Strategist: 1 } },
-      { id: "c", text: "Ask an adult to rebuild the robot.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "d", text: "Skip testing and only practice driving.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-    ],
-  },
-  {
-    id: "q2",
-    category: "Builder",
-    roleTags: ["Builder"],
-    text: "During building, two beams do not align correctly. What is the best next step?",
-    correctChoiceId: "b",
-    feedback: "A good builder checks alignment and structure before making bigger changes.",
-    choices: [
-      { id: "a", text: "Force the parts together.", correctnessScore: 0, roleWeights: { Builder: -1 } },
-      { id: "b", text: "Check hole spacing, connector placement, and whether the structure is square.", correctnessScore: 1, roleWeights: { Builder: 3, Notebooker: 1 } },
-      { id: "c", text: "Remove the whole robot and start over immediately.", correctnessScore: 0, roleWeights: { Builder: 1 } },
-      { id: "d", text: "Ignore it because the robot still moves.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-    ],
-  },
-  {
-    id: "q3",
-    category: "Builder / Rules",
-    roleTags: ["Builder", "Strategist"],
-    text: "The game allows the robot to carry only one Bean Bag at a time. What should the robot design focus on?",
-    correctChoiceId: "b",
-    feedback: "A strong design follows game constraints and solves the real scoring task.",
-    choices: [
-      { id: "a", text: "Carrying as many Bean Bags as possible.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-      { id: "b", text: "Quickly and reliably controlling one Bean Bag.", correctnessScore: 1, roleWeights: { Builder: 2, Strategist: 2 } },
-      { id: "c", text: "Blocking all other robots.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "d", text: "Making the robot as tall as possible with no testing.", correctnessScore: 0, roleWeights: { Builder: 1 } },
-    ],
-  },
-  {
-    id: "q4",
-    category: "Builder / Inspection",
-    roleTags: ["Builder"],
-    text: "The robot does not fit inside the required inspection size. What should the team do?",
-    correctChoiceId: "b",
-    feedback:
-      "Builders must understand that a competition robot must pass inspection before competing.",
-    choices: [
-      { id: "a", text: "Hide the oversized part.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "b", text: "Redesign or adjust the mechanism so the robot passes inspection.", correctnessScore: 1, roleWeights: { Builder: 3, TeamCollaborator: 1 } },
-      { id: "c", text: "Ask the referee to ignore it.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Only use the robot for practice and not matches.", correctnessScore: 0, roleWeights: { Strategist: 1 } },
-    ],
-  },
-  {
-    id: "q5",
-    category: "Programmer",
-    roleTags: ["Programmer"],
-    text: "The autonomous program does not start correctly. What should the programmer do first?",
-    correctChoiceId: "b",
-    feedback: "Good programmers debug step by step and test small parts of the program.",
-    choices: [
-      { id: "a", text: "Randomly change many blocks at once.", correctnessScore: 0, roleWeights: { Programmer: -1 } },
-      { id: "b", text: "Check the starting command, device setup, and run a small test program.", correctnessScore: 1, roleWeights: { Programmer: 3, Notebooker: 1 } },
-      { id: "c", text: "Blame the driver.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "d", text: "Delete all code immediately.", correctnessScore: 0, roleWeights: { Programmer: 1 } },
-    ],
-  },
-  {
-    id: "q6",
-    category: "Programmer",
-    roleTags: ["Programmer"],
-    text: "You want the robot to drive the same distance every time. Which idea is most useful?",
-    correctChoiceId: "b",
-    feedback: "Consistent movement usually needs measured values or sensor-based control.",
-    choices: [
-      { id: "a", text: "Guess the time and never adjust it.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "b", text: "Use motor rotations, distance values, or sensor feedback when available.", correctnessScore: 1, roleWeights: { Programmer: 3, Driver: 1 } },
-      { id: "c", text: "Push the robot by hand.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "d", text: "Only make the robot faster.", correctnessScore: 0, roleWeights: { Builder: 1 } },
-    ],
-  },
-  {
-    id: "q7",
-    category: "Programmer / Documentation",
-    roleTags: ["Programmer", "Notebooker"],
-    text: "Your code works once, then fails on the second run. What is a good debugging habit?",
     correctChoiceId: "a",
-    feedback: "Debugging and documentation work together.",
+    text: "A robot's lifting arm works at first but starts to sag after several matches. What should the team check first?",
+    feedback:
+      "Sagging usually comes from loose or worn mechanical parts, so a builder checks the structure first.",
     choices: [
-      { id: "a", text: "Write down what changed, test one change at a time, and record results.", correctnessScore: 1, roleWeights: { Programmer: 2, Notebooker: 2 } },
-      { id: "b", text: "Never document code problems.", correctnessScore: 0, roleWeights: { Notebooker: -1 } },
-      { id: "c", text: "Keep changing code until it accidentally works.", correctnessScore: 0, roleWeights: { Programmer: 1 } },
-      { id: "d", text: "Stop using autonomous code.", correctnessScore: 0, roleWeights: { Driver: 1 } },
+      { id: "a", text: "Whether the gears, axles, or joints have loosened or worn.", correctnessScore: 1 },
+      { id: "b", text: "Whether the driver has practised using the arm enough.", correctnessScore: 0 },
+      { id: "c", text: "Whether a stronger motor would cover up the problem.", correctnessScore: 0 },
+      { id: "d", text: "Whether the arm is simply being used too often.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q8",
+    id: "k2",
+    kind: "knowledge",
+    category: "Builder",
+    correctChoiceId: "c",
+    text: "The robot drifts to one side instead of driving straight. What is the most likely mechanical cause?",
+    feedback:
+      "Drifting usually means the two drive sides are not matched — check friction, wheels, and connections.",
+    choices: [
+      { id: "a", text: "The field tiles are reflecting too much light into the sensors.", correctnessScore: 0 },
+      { id: "b", text: "The robot needs a completely redesigned chassis.", correctnessScore: 0 },
+      { id: "c", text: "One drive side has more friction or a loose wheel.", correctnessScore: 1 },
+      { id: "d", text: "The driver is not holding the joystick firmly enough.", correctnessScore: 0 },
+    ],
+  },
+  {
+    id: "k3",
+    kind: "knowledge",
+    category: "Programmer",
+    correctChoiceId: "b",
+    text: "An autonomous routine drives too far on some runs and too short on others. What is the best first step?",
+    feedback:
+      "Inconsistent movement is best found by isolating and testing one step at a time.",
+    choices: [
+      { id: "a", text: "Rewrite the entire program again from the very beginning.", correctnessScore: 0 },
+      { id: "b", text: "Test one movement at a time and compare the results.", correctnessScore: 1 },
+      { id: "c", text: "Run the program faster so the errors matter less.", correctnessScore: 0 },
+      { id: "d", text: "Switch to driving the robot by hand instead.", correctnessScore: 0 },
+    ],
+  },
+  {
+    id: "k4",
+    kind: "knowledge",
     category: "Programmer / Student-Centered",
-    roleTags: ["Programmer", "TeamCollaborator"],
-    text: "A student uses code from the internet but cannot explain how it works. What is the problem?",
-    correctChoiceId: "b",
-    feedback: "A student-centered team must understand its own code.",
+    correctChoiceId: "d",
+    text: "A team uses code from the internet but cannot explain how it works. Why is this a problem in VEX IQ?",
+    feedback:
+      "VEX IQ is student-centered — students need to understand and explain their own code.",
     choices: [
-      { id: "a", text: "Nothing; copying code is always enough.", correctnessScore: 0, roleWeights: { Programmer: -1 } },
-      { id: "b", text: "The student must understand and be able to explain the code used on the robot.", correctnessScore: 1, roleWeights: { Programmer: 2, TeamCollaborator: 2 } },
-      { id: "c", text: "Only the teacher needs to understand the code.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Code does not matter in VEX IQ.", correctnessScore: 0, roleWeights: { Programmer: -1 } },
+      { id: "a", text: "It is never a problem; working code is always enough.", correctnessScore: 0 },
+      { id: "b", text: "Only the teacher really needs to understand the code.", correctnessScore: 0 },
+      { id: "c", text: "Downloaded code always runs slower on the robot.", correctnessScore: 0 },
+      { id: "d", text: "Students should be able to understand and explain their own code.", correctnessScore: 1 },
     ],
   },
   {
-    id: "q9",
+    id: "k5",
+    kind: "knowledge",
     category: "Driver",
-    roleTags: ["Driver"],
-    text: "It is the last 20 seconds of a close match and your robot is mid-field. You can keep running short scoring cycles you know you can finish, or attempt one risky long route to a high-value goal. What is usually the better driver choice?",
-    correctChoiceId: "a",
+    correctChoiceId: "b",
+    text: "It is the last 15 seconds of a close match and your robot is mid-field. What is usually the stronger choice?",
     feedback:
-      "Strong drivers weigh time, distance, and reliability — finishing sure points usually beats an attempt that may not complete.",
+      "With little time left, completing sure points usually beats a risky attempt that may not finish.",
     choices: [
-      { id: "a", text: "Keep running the reliable scoring cycles you can finish before time runs out.", correctnessScore: 1, roleWeights: { Driver: 3, Strategist: 1 } },
-      { id: "b", text: "Go for the risky long route to the high goal even though you might not finish in time.", correctnessScore: 0, roleWeights: { Driver: 1, Strategist: -1 } },
-      { id: "c", text: "Speed up everywhere and accept more mistakes to fit in extra attempts.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "d", text: "Coordinate nothing and just react to whatever your partner robot does.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
+      { id: "a", text: "Attempt the risky long route to the single highest goal.", correctnessScore: 0 },
+      { id: "b", text: "Finish the reliable scoring you can complete in time.", correctnessScore: 1 },
+      { id: "c", text: "Stop early to avoid making any mistakes.", correctnessScore: 0 },
+      { id: "d", text: "Copy whatever the alliance partner is doing.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q10",
-    category: "Driver Practice",
-    roleTags: ["Driver"],
-    text: "Your team has only a few short practice sessions before a competition. Which driving practice plan is most effective?",
-    correctChoiceId: "b",
-    feedback: "Drivers improve fastest from focused, measured practice on real scoring routes plus reviewing mistakes — not from unstructured time.",
-    choices: [
-      { id: "a", text: "Free-drive around the field each session without a specific goal.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "b", text: "Run timed drills on your real scoring routes and review the mistakes afterward.", correctnessScore: 1, roleWeights: { Driver: 3, Notebooker: 1 } },
-      { id: "c", text: "Only practice the routes you are already confident with.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "d", text: "Practice once, then rely on the autonomous program for the rest.", correctnessScore: 0, roleWeights: { Driver: -1 } },
-    ],
-  },
-  {
-    id: "q11",
-    category: "Driver / Strategy",
-    roleTags: ["Driver", "Strategist"],
-    text: "Your alliance partner has a robot that scores better in high goals. What is a smart driver decision?",
-    correctChoiceId: "b",
-    feedback: "Good drivers understand teamwork and match coordination.",
-    choices: [
-      { id: "a", text: "Ignore the partner and do the same task.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "b", text: "Coordinate roles so both robots use their strengths.", correctnessScore: 1, roleWeights: { Driver: 2, Strategist: 2, TeamCollaborator: 2 } },
-      { id: "c", text: "Block your partner.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Stop driving.", correctnessScore: 0, roleWeights: { Driver: -1 } },
-    ],
-  },
-  {
-    id: "q12",
-    category: "Rules / Safety Awareness",
-    roleTags: ["TeamCollaborator", "Strategist"],
-    text: "The match has just ended and the referee is still confirming the final score. What should the team do?",
+    id: "k6",
+    kind: "knowledge",
+    category: "Driver",
     correctChoiceId: "a",
-    feedback: "Rule-aware teams leave the field and robot as they are and let the referee confirm the score before touching anything.",
-    choices: [
-      { id: "a", text: "Wait calmly and leave the robot and field pieces where they are until the referee confirms the score.", correctnessScore: 1, roleWeights: { TeamCollaborator: 2, Strategist: 1 } },
-      { id: "b", text: "Quickly move the robot off to the side so it is ready for the next match.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "c", text: "Start tidying up the game pieces on the field to be helpful.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "d", text: "Tell the referee the score you believe is correct and ask them to use it.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1, Strategist: -1 } },
-    ],
-  },
-  {
-    id: "q13",
-    category: "Notebooker",
-    roleTags: ["Notebooker"],
-    text: "After testing a new intake design, what should the notebook include?",
-    correctChoiceId: "b",
-    feedback: "A strong notebook explains the design process, not just the final result.",
-    choices: [
-      { id: "a", text: "Only \"it worked.\"", correctnessScore: 0, roleWeights: { Notebooker: 1 } },
-      { id: "b", text: "The goal, sketch or photo, test result, problem, change made, and next step.", correctnessScore: 1, roleWeights: { Notebooker: 3, Builder: 1 } },
-      { id: "c", text: "Nothing until the end of the season.", correctnessScore: 0, roleWeights: { Notebooker: -1 } },
-      { id: "d", text: "Only the final robot picture.", correctnessScore: 0, roleWeights: { Notebooker: 1 } },
-    ],
-  },
-  {
-    id: "q14",
-    category: "Notebooker / Academic Honesty",
-    roleTags: ["Notebooker", "TeamCollaborator"],
-    text: "Your team gets inspiration from another team's mechanism. What should you do?",
-    correctChoiceId: "b",
+    text: "Your team has only a few short practice sessions before a competition. Which plan helps the driver improve most?",
     feedback:
-      "Notebookers should document sources, inspiration, and original team changes.",
+      "Drivers improve fastest from focused, timed practice on real routes plus reviewing mistakes.",
     choices: [
-      { id: "a", text: "Copy it exactly and say it is yours.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "b", text: "Credit the inspiration and document how your team changed and improved the idea.", correctnessScore: 1, roleWeights: { Notebooker: 3, TeamCollaborator: 2 } },
-      { id: "c", text: "Never write about it.", correctnessScore: 0, roleWeights: { Notebooker: -1 } },
-      { id: "d", text: "Ask an adult to write the explanation.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
+      { id: "a", text: "Run timed drills on real routes and review the mistakes.", correctnessScore: 1 },
+      { id: "b", text: "Free-drive around the field with no specific goal.", correctnessScore: 0 },
+      { id: "c", text: "Only practise the routes that already feel easy.", correctnessScore: 0 },
+      { id: "d", text: "Practise once and rely on autonomous for the rest.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q15",
+    id: "k7",
+    kind: "knowledge",
     category: "Notebooker",
-    roleTags: ["Notebooker"],
-    text: "Which notebook entry is strongest?",
-    correctChoiceId: "b",
-    feedback: "Strong notebook writing includes reason, data, and evidence.",
+    correctChoiceId: "d",
+    text: "Which engineering-notebook entry gives judges the most useful information?",
+    feedback:
+      "Strong notebook entries record the reason for a change and the data from testing it.",
     choices: [
-      { id: "a", text: "\"We built today.\"", correctnessScore: 0, roleWeights: { Notebooker: 1 } },
-      { id: "b", text: "\"We changed the gear ratio from 1:1 to 3:1 because the arm needed more torque. Test result: lifted the Bean Bag 4 out of 5 times.\"", correctnessScore: 1, roleWeights: { Notebooker: 3, Builder: 1 } },
-      { id: "c", text: "\"The robot is cool.\"", correctnessScore: 0, roleWeights: {} },
-      { id: "d", text: "\"The teacher fixed it.\"", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
+      { id: "a", text: "\"We worked on the robot today and it went well.\"", correctnessScore: 0 },
+      { id: "b", text: "\"The robot is finished now and it looks really good.\"", correctnessScore: 0 },
+      { id: "c", text: "\"We adjusted several parts during the session and the robot now seems to work better overall.\"", correctnessScore: 0 },
+      { id: "d", text: "\"We changed the gear ratio to 3:1 for torque; it then lifted the load 4 of 5 tries.\"", correctnessScore: 1 },
     ],
   },
   {
-    id: "q16",
-    category: "Notebooker / Judging",
-    roleTags: ["Notebooker"],
-    text: "Judges ask why your team changed the robot design. What helps most?",
-    correctChoiceId: "a",
-    feedback: "Notebookers help the team explain the design journey.",
+    id: "k8",
+    kind: "knowledge",
+    category: "Notebooker",
+    correctChoiceId: "c",
+    text: "Your team is inspired by another team's mechanism. What is the right way to use that idea?",
+    feedback:
+      "Honest notebooks credit inspiration and show the team's own changes and improvements.",
     choices: [
-      { id: "a", text: "A clear notebook record showing tests, failures, decisions, and improvements.", correctnessScore: 1, roleWeights: { Notebooker: 3, TeamCollaborator: 1 } },
-      { id: "b", text: "Saying \"I don't know.\"", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "c", text: "Letting an adult answer.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Showing only decorations.", correctnessScore: 0, roleWeights: { Builder: 1 } },
+      { id: "a", text: "Copy it exactly and present it as your own.", correctnessScore: 0 },
+      { id: "b", text: "Avoid mentioning it anywhere so that no one asks any questions.", correctnessScore: 0 },
+      { id: "c", text: "Credit the inspiration and document how your team changed it.", correctnessScore: 1 },
+      { id: "d", text: "Use it only if no other team finds out.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q17",
+    id: "k9",
+    kind: "knowledge",
     category: "Strategist",
-    roleTags: ["Strategist"],
-    text: "The field has long routes and narrow shortcuts. What should the strategist compare?",
-    correctChoiceId: "b",
+    correctChoiceId: "a",
+    text: "A field has both long open routes and narrow shortcuts. What should a strategist weigh when choosing?",
     feedback:
-      "Strategy means choosing actions based on scoring, time, rules, and robot capability.",
+      "Strategy compares routes by time, risk, reliability, and scoring value — not by appearance.",
     choices: [
-      { id: "a", text: "Only which path looks cooler.", correctnessScore: 0, roleWeights: {} },
-      { id: "b", text: "Time, reliability, robot size, scoring value, and risk.", correctnessScore: 1, roleWeights: { Strategist: 3, Driver: 1, Builder: 1 } },
-      { id: "c", text: "Only the color of the Bean Bags.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-      { id: "d", text: "Nothing; strategy is not needed.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
+      { id: "a", text: "Time, reliability, risk, and the points each route scores.", correctnessScore: 1 },
+      { id: "b", text: "Only which of the routes looks the most impressive to watch.", correctnessScore: 0 },
+      { id: "c", text: "Whichever route the fastest robot would take.", correctnessScore: 0 },
+      { id: "d", text: "The route with the brightest game pieces.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q18",
-    category: "Strategist / Rules",
-    roleTags: ["Strategist"],
-    text: "If the robot can possess only one Bean Bag, what strategy makes sense?",
-    correctChoiceId: "a",
-    feedback: "Good strategy follows the rules and optimizes around constraints.",
-    choices: [
-      { id: "a", text: "Plan fast cycles and efficient routes for one Bean Bag at a time.", correctnessScore: 1, roleWeights: { Strategist: 3, Driver: 1 } },
-      { id: "b", text: "Plan to carry many Bean Bags.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-      { id: "c", text: "Ignore possession rules.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Wait until the match is over.", correctnessScore: 0, roleWeights: { Driver: -1 } },
-    ],
-  },
-  {
-    id: "q19",
-    category: "Strategist / Driver",
-    roleTags: ["Strategist", "Driver"],
-    text: "There are 10 seconds left and your robot is far from the highest goal. What should you consider?",
-    correctChoiceId: "a",
-    feedback: "Good match decisions consider time, distance, risk, and scoring value.",
-    choices: [
-      { id: "a", text: "The safest nearby scoring option that can be completed before time ends.", correctnessScore: 1, roleWeights: { Strategist: 2, Driver: 2 } },
-      { id: "b", text: "A risky long route with no chance to finish.", correctnessScore: 0, roleWeights: { Driver: 1 } },
-      { id: "c", text: "Stop immediately even if scoring is possible.", correctnessScore: 0, roleWeights: {} },
-      { id: "d", text: "Ask the audience what to do.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-    ],
-  },
-  {
-    id: "q20",
-    category: "Strategist / Teamwork",
-    roleTags: ["Strategist", "TeamCollaborator"],
-    text: "Before a teamwork match, what should two teams discuss?",
-    correctChoiceId: "a",
-    feedback: "Teamwork matches require communication and role coordination.",
-    choices: [
-      { id: "a", text: "Who will do which scoring tasks and how to avoid interfering with each other.", correctnessScore: 1, roleWeights: { Strategist: 3, TeamCollaborator: 2, Driver: 1 } },
-      { id: "b", text: "Which team is better.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "c", text: "How to blame each other if the score is low.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Nothing; teamwork matches do not need planning.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-    ],
-  },
-  {
-    id: "q21",
-    category: "Team Collaborator",
-    roleTags: ["TeamCollaborator"],
-    text: "Two students disagree about the robot design. What is the best team behavior?",
-    correctChoiceId: "a",
-    feedback: "Strong teams use respectful discussion and evidence-based decisions.",
-    choices: [
-      { id: "a", text: "Test both ideas if possible and compare results respectfully.", correctnessScore: 1, roleWeights: { TeamCollaborator: 3, Builder: 1, Notebooker: 1 } },
-      { id: "b", text: "Let the loudest person decide.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "c", text: "Stop talking to each other.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "Ask an adult to choose without student discussion.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-    ],
-  },
-  {
-    id: "q22",
-    category: "Student-Centered / Notebooker",
-    roleTags: ["Notebooker", "TeamCollaborator"],
-    text: "An adult offers to rewrite the engineering notebook to make it sound better. What should students do?",
+    id: "k10",
+    kind: "knowledge",
+    category: "Strategist",
     correctChoiceId: "b",
-    feedback: "The notebook should reflect student work and student voice.",
-    choices: [
-      { id: "a", text: "Accept, because adults write better.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "b", text: "Politely keep the notebook in the students' own words and ask only for general feedback.", correctnessScore: 1, roleWeights: { Notebooker: 2, TeamCollaborator: 2 } },
-      { id: "c", text: "Delete the notebook.", correctnessScore: 0, roleWeights: { Notebooker: -1 } },
-      { id: "d", text: "Let the adult create all documentation.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-    ],
-  },
-  {
-    id: "q23",
-    category: "Rules Awareness",
-    roleTags: ["Strategist", "TeamCollaborator"],
-    text: "If the team is unsure about a game rule, what is the best first step?",
-    correctChoiceId: "b",
+    text: "Your alliance partner's robot scores well on high goals. What is the smartest plan for your robot?",
     feedback:
-      "Rule-aware teams use the current manual and official clarification channels.",
+      "Good alliances divide the work so each robot uses its strengths instead of overlapping.",
     choices: [
-      { id: "a", text: "Guess and hope it is legal.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-      { id: "b", text: "Read the current game manual and ask an official question only if still unclear.", correctnessScore: 1, roleWeights: { Strategist: 2, TeamCollaborator: 2, Notebooker: 1 } },
-      { id: "c", text: "Use rules from a past season.", correctnessScore: 0, roleWeights: { Strategist: -1 } },
-      { id: "d", text: "Ask a random spectator.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
+      { id: "a", text: "Compete for the same high goals to be safe.", correctnessScore: 0 },
+      { id: "b", text: "Focus on the goals your partner is not covering.", correctnessScore: 1 },
+      { id: "c", text: "Block the partner so it does not get in the way.", correctnessScore: 0 },
+      { id: "d", text: "Wait and copy the partner's moves each time.", correctnessScore: 0 },
     ],
   },
   {
-    id: "q24",
-    category: "Team Role Understanding",
-    roleTags: ["TeamCollaborator"],
-    text: "Which statement best describes a strong VEX IQ team?",
-    correctChoiceId: "b",
+    id: "k11",
+    kind: "knowledge",
+    category: "Rules / Safety",
+    correctChoiceId: "c",
+    text: "The match has just ended and the referee is still confirming the score. What should the team do?",
     feedback:
-      "A strong VEX IQ team is student-centered: students share the work, understand their own robot, and can explain their choices.",
+      "Rules-aware teams leave everything in place and let the referee confirm the score first.",
     choices: [
-      { id: "a", text: "One student does all of the important work.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
-      { id: "b", text: "Students share the work, understand their own robot, communicate clearly, and can explain their design choices.", correctnessScore: 1, roleWeights: { TeamCollaborator: 1 } },
-      { id: "c", text: "Adults build and program the robot while the students watch.", correctnessScore: 0, roleWeights: { TeamCollaborator: -2 } },
-      { id: "d", text: "The team only practices driving and ignores design, code, and the notebook.", correctnessScore: 0, roleWeights: { TeamCollaborator: -1 } },
+      { id: "a", text: "Move the robot off to the side right away so it is ready for the next match.", correctnessScore: 0 },
+      { id: "b", text: "Tidy the game pieces on the field to be helpful.", correctnessScore: 0 },
+      { id: "c", text: "Leave the robot and pieces in place until the referee confirms the score.", correctnessScore: 1 },
+      { id: "d", text: "Tell the referee which score the team believes is right.", correctnessScore: 0 },
+    ],
+  },
+  {
+    id: "k12",
+    kind: "knowledge",
+    category: "Rules / Safety",
+    correctChoiceId: "d",
+    text: "Your team is unsure whether a robot modification is legal. What is the best first step?",
+    feedback:
+      "When unsure, rules-aware teams check the current manual and use official clarification channels.",
+    choices: [
+      { id: "a", text: "Assume the modification is allowed unless another team decides to complain.", correctnessScore: 0 },
+      { id: "b", text: "Use the rules from last year's competition.", correctnessScore: 0 },
+      { id: "c", text: "Ask a nearby spectator what they think.", correctnessScore: 0 },
+      { id: "d", text: "Read the current game manual and ask an official question if still unclear.", correctnessScore: 1 },
+    ],
+  },
+  {
+    id: "k13",
+    kind: "knowledge",
+    category: "Student-Centered",
+    correctChoiceId: "b",
+    text: "An adult offers to rewrite your engineering notebook so it sounds more professional. What should the students do?",
+    feedback:
+      "The notebook must stay in the students' own voice — adults can give feedback, not rewrite it.",
+    choices: [
+      { id: "a", text: "Accept the offer, because adults usually write more professionally than students do.", correctnessScore: 0 },
+      { id: "b", text: "Keep it in their own words and ask only for general feedback.", correctnessScore: 1 },
+      { id: "c", text: "Let the adult write the whole notebook this time.", correctnessScore: 0 },
+      { id: "d", text: "Stop keeping a notebook to avoid the problem.", correctnessScore: 0 },
+    ],
+  },
+  {
+    id: "k14",
+    kind: "knowledge",
+    category: "Student-Centered",
+    correctChoiceId: "a",
+    text: "Which statement best describes a student-centered VEX IQ team?",
+    feedback:
+      "A student-centered team shares the work and the students can explain their own robot.",
+    choices: [
+      { id: "a", text: "Students share the work and can explain their own robot.", correctnessScore: 1 },
+      { id: "b", text: "One strong student does all of the important work.", correctnessScore: 0 },
+      { id: "c", text: "Adults build and program while the students watch.", correctnessScore: 0 },
+      { id: "d", text: "The team focuses only on driving and ignores the design, the code, and the notebook.", correctnessScore: 0 },
+    ],
+  },
+  {
+    id: "k15",
+    kind: "knowledge",
+    category: "Teamwork",
+    correctChoiceId: "c",
+    text: "Two teammates disagree about which design to use. What is the strongest way to decide?",
+    feedback:
+      "Strong teams test ideas and compare evidence respectfully instead of deciding by volume.",
+    choices: [
+      { id: "a", text: "Let the louder teammate make the final call.", correctnessScore: 0 },
+      { id: "b", text: "Ask an adult to choose the design without involving the students.", correctnessScore: 0 },
+      { id: "c", text: "Test both ideas and compare the results together.", correctnessScore: 1 },
+      { id: "d", text: "Stop discussing it and avoid the topic.", correctnessScore: 0 },
     ],
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Role Tendency / Thinking Style questions (NO correct answer).
+// Each option is a reasonable choice; it maps to one role. These mostly drive
+// the suggested focus. Roles are placed in DIFFERENT positions across questions
+// so an "always pick A/B/C/D" pattern does not map to a single role.
+// ---------------------------------------------------------------------------
+
+const TENDENCY_QUESTIONS: TendencyQuestion[] = [
+  {
+    id: "t1",
+    kind: "tendency",
+    category: "Pre-match preparation",
+    text: "Your team has 30 minutes before a practice match. What do you want to work on first?",
+    choices: [
+      { id: "a", text: "Practise the fastest scoring route over and over.", role: "Driver" },
+      { id: "b", text: "Write down today's test results and plans in the notebook.", role: "Notebooker" },
+      { id: "c", text: "Check the robot's structure and fix any weak parts.", role: "Builder" },
+      { id: "d", text: "Run the autonomous code and fix movement that looks off.", role: "Programmer" },
+    ],
+  },
+  {
+    id: "t2",
+    kind: "tendency",
+    category: "After a build",
+    text: "Your team just finished a big build. What feels most satisfying to do next?",
+    choices: [
+      { id: "a", text: "Record what you built and why, with photos and notes.", role: "Notebooker" },
+      { id: "b", text: "Make the new mechanism sturdier and cleaner.", role: "Builder" },
+      { id: "c", text: "Program the new mechanism so it runs on its own.", role: "Programmer" },
+      { id: "d", text: "Plan how this changes your match strategy.", role: "Strategist" },
+    ],
+  },
+  {
+    id: "t3",
+    kind: "tendency",
+    category: "Team disagreement",
+    text: "Two teammates disagree about how the robot should score. What do you naturally do?",
+    choices: [
+      { id: "a", text: "Compare both ideas by how many points each could score.", role: "Strategist" },
+      { id: "b", text: "Help everyone share their view and reach a fair decision.", role: "TeamCollaborator" },
+      { id: "c", text: "Try driving both ideas to see which one feels better.", role: "Driver" },
+      { id: "d", text: "Write down the pros and cons of each idea to compare.", role: "Notebooker" },
+    ],
+  },
+  {
+    id: "t4",
+    kind: "tendency",
+    category: "Choosing what to improve",
+    text: "Your robot already works. What do you most want to improve next?",
+    choices: [
+      { id: "a", text: "Make the autonomous routine more accurate.", role: "Programmer" },
+      { id: "b", text: "Get faster and more precise at driving it.", role: "Driver" },
+      { id: "c", text: "Find a smarter route to score more points.", role: "Strategist" },
+      { id: "d", text: "Rebuild a part so it is stronger and lighter.", role: "Builder" },
+    ],
+  },
+  {
+    id: "t5",
+    kind: "tendency",
+    category: "Preparing for judging",
+    text: "Your team is getting ready to talk with the judges. What part do you want to lead?",
+    choices: [
+      { id: "a", text: "Explaining how the robot is built and why.", role: "Builder" },
+      { id: "b", text: "Explaining the team's game plan and choices.", role: "Strategist" },
+      { id: "c", text: "Walking the judges through the notebook.", role: "Notebooker" },
+      { id: "d", text: "Making sure everyone gets a turn to speak.", role: "TeamCollaborator" },
+    ],
+  },
+  {
+    id: "t6",
+    kind: "tendency",
+    category: "Analyzing field strategy",
+    text: "Your team is studying a new game field. What catches your attention first?",
+    choices: [
+      { id: "a", text: "Which paths will be quick and easy to drive.", role: "Driver" },
+      { id: "b", text: "What mechanism the robot needs to score well.", role: "Builder" },
+      { id: "c", text: "Which movements the autonomous code should do.", role: "Programmer" },
+      { id: "d", text: "Which goals are worth the most points.", role: "Strategist" },
+    ],
+  },
+  {
+    id: "t7",
+    kind: "tendency",
+    category: "Using limited practice time",
+    text: "Your team has one hour of practice left. How do you want to spend it?",
+    choices: [
+      { id: "a", text: "Updating the notebook so nothing is forgotten.", role: "Notebooker" },
+      { id: "b", text: "Testing and fixing the autonomous code.", role: "Programmer" },
+      { id: "c", text: "Making sure everyone knows their job for the match.", role: "TeamCollaborator" },
+      { id: "d", text: "Driving practice matches against the clock.", role: "Driver" },
+    ],
+  },
+  {
+    id: "t8",
+    kind: "tendency",
+    category: "After a failed match",
+    text: "Your team just lost a close match. What do you want to do right after?",
+    choices: [
+      { id: "a", text: "Keep the team calm and encourage each other.", role: "TeamCollaborator" },
+      { id: "b", text: "Write down what went wrong while it is fresh.", role: "Notebooker" },
+      { id: "c", text: "Get back on the field and practise the part that failed.", role: "Driver" },
+      { id: "d", text: "Rethink the plan for the next match.", role: "Strategist" },
+    ],
+  },
+  {
+    id: "t9",
+    kind: "tendency",
+    category: "A recurring problem",
+    text: "A part of your robot keeps causing trouble in matches. What is your instinct?",
+    choices: [
+      { id: "a", text: "Decide whether to redesign around it or play to its limits.", role: "Strategist" },
+      { id: "b", text: "Take it apart and rebuild that section more reliably.", role: "Builder" },
+      { id: "c", text: "Get the team together to agree on a fix.", role: "TeamCollaborator" },
+      { id: "d", text: "Add code that works around the problem.", role: "Programmer" },
+    ],
+  },
+];
+
+export const QUESTIONS: Question[] = [...KNOWLEDGE_QUESTIONS, ...TENDENCY_QUESTIONS];
 
 /** Lightweight lookup map keyed by question id. */
 export const QUESTIONS_BY_ID: Record<string, Question> = Object.fromEntries(
@@ -376,10 +429,13 @@ export const QUESTIONS_BY_ID: Record<string, Question> = Object.fromEntries(
 );
 
 export const QUESTION_COUNT = QUESTIONS.length;
+export const KNOWLEDGE_COUNT = KNOWLEDGE_QUESTIONS.length;
+export const TENDENCY_COUNT = TENDENCY_QUESTIONS.length;
 
 // Public-facing shape sent to the quiz UI. It deliberately omits correct
-// answers, correctness scores, role weights, and feedback so students cannot
-// see the answer key. Scoring happens on the server.
+// answers, correctness scores, role mappings, and feedback so students cannot
+// see the answer key or which role a choice maps to. Scoring happens on the
+// server. Knowledge and tendency questions look identical to the student.
 export interface PublicChoice {
   id: string;
   text: string;
